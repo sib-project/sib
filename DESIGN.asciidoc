@@ -1,0 +1,177 @@
+================================
+lore: A standard Unix LLM client
+================================
+
+Logical structure of content-addressed relational store
+=======================================================
+
+struct Span {
+       blob: <sha>,
+       ref: <u64,u64>		// (byte offset, length)
+}
+
+struct Trace {
+       spans: Vec<Span>
+}
+
+struct Chain {
+       parent: <sha>,		// parent chain
+       trace: <sha>,		// sha to trace object
+}
+
+// Example of parsed LLM response (r: response.json)
+Trace: {
+       spans: {
+	       { "content", {{HASH(r), (31, 30) }, {HASH(r), (78, 10)}}},
+	       { "agent",   {{HASH(r), (50, 8 /* opus-4.7 */)}}},
+	       { "vendor",  {{HASH(r), (40, 6 /* claude */) }}},
+	       { "hello",   {{HASH(", world!")}, (0, 8)}}
+       }
+}
+
+
+Git implementation of content-addressed relational store
+========================================================
+
+trace and key object
+--------------------
+
+Let's say, _trace object_ for above example has packet `tr`, and
+regarding that, the packet of the key object for a specific <key> is
+`tr.<key>`. We use git's tree object to pack trace object, like this:
+
+-----
+100644 blob HASH("LORE1")     _LORETRACE
+040000 tree HASH(tr.content)  content
+040000 tree HASH(tr.agent)    agent
+040000 tree HASH(tr.vendor)   vendor
+040000 tree HASH(tr.hello)    hello
+-----
+
+Special indicator _LORETRACE with indicator (LORE) followed by version
+number (1) is used to indicate whether it is just a random tree object
+inside the git storage or lore's trace object.
+
+Every tree objects inside of trace object are _lore's key object_. To
+represent the spans within the key object, we pack the blob that each
+span points to as a blob within the git tree object used to represent
+the key object, and encode each filename using index, offset (O), and
+length (L).
+
+Below are the details of r.content:
+
+-----
+100644 blob HASH(r) 100000000000-O31-L30 /* index: 100000000000, offset: 31, length: 30 */
+100644 blob HASH(r) 100000100000-O78-L10 /* index: 100000100000, offset: 78, length: 10 */
+-----
+
+Note that lore does not define rules for the index numbers themselves,
+but only defines that they must be within twelve decimal digits and
+that the larger number is the next index. Only indexes are encoded
+fixed-length and others (offset, length) are in variable lenghts.
+
+* XXXXXXXXXXXX-O<offset>-L<length>
+
+In other words, lexicographical order of each filename becomes the
+index order, and it is the same order as Git's tree object packing.
+
+
+lore's plumbing commands
+------------------------
+
+How to make trace object? First, we write empty trace object with
+
+* lore init-trace
+
+and get its trace_hash. Note that trace object is treated specially,
+so empty trace object should not be indentical to "empty tree object"
+in git, more likely
+
+-----
+100644 blob HASH("LOREv1") _LORETRACE
+-----
+
+this. And then we can append or prepend (-r) span to specific key to
+trace object with
+
+* cat blob | lore append-key [-r] <key> [<offset>,<len>] <trace_hash>
+
+getting updated trace_hash value. Thanks to Git's elegant tree
+structure, no redundant objects are created within this process.
+
+Now finally, we commit the trace object, and generate the chain object
+via
+
+* lore chain-trace <trace_hash> [-p <chain_hash>]
+
+and get chain_hash.
+
+We only commit trace object in lore, and that commit object named as
+_chain object_ in lore:
+
+-----
+tree <trace_hash>
+parent <chain_hash>
+author "Lore" 0000000000 +0000
+committer "Lore" 0000000000 +0000
+-----
+
+Note that with same trace and parent, the same hash of chain object is
+generated. This determinism is intentional. Since the actual data is
+stored in the trace, chains with the same parent and trace should be
+classified as the same state of the database.
+
+* cat blob | lore hash-object                                         -> <hash>
+* lore init-trace                                                     -> <trace_hash>
+* cat blob | lore append-key [-r] <key> <trace_hash> [<offset>,<len>] -> <trace_hash>
+* lore chain-trace [-p <chain_hash>] <trace_hash>                     -> <chain_hash>
+* lore read-chain <key> <chain_hash>                                  -> value
+
+Request lifetime
+================
+
+User request (text)
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ wrapper                             │ <- vendor, model, (temperature, ...)
+│ (shell or rust)                     │
+└─────────┬───────────────────────────┘
+          │                 ┌─────────────────────┐
+          | HTTP request -> | Lore CAS commands   │ -> ./git/objects/...
+          |                 └─────────────────────┘
+          ▼
+┌─────────────────────────────────────┐
+│ fetch (curl)                        │ <- API key, endpoint
+└─────────┬───────────────────────────┘
+          │ raw response bytes (JSON)
+          ▼
+┌─────────────────────────────────────┐
+│ parser                              | <- vendor
+│ - Anthropic parser                  │ -> User output: streaming
+│ - OpenAI parser                     │
+│ - Gemini parser                     │
+└─────────┬───────────────────────────┘
+          │ raw bytes (passthrough)
+          │ + spans ("key": Vec<offset,len>)
+	  |
+          ▼
+┌─────────────────────────────────────┐
+│ Lore CAS commands                   │ -> User output: `lore read-trace <chain_hash> content`
+└─────────────────────────────────────┘
+          | store via git
+	  ▼
+┌─────────────────────────────────────┐
+| .git/objects/...                    |
+└─────────────────────────────────────┘
+
+Lore porcelain commands
+=======================
+
+* lore init - init the lore storage
+* echo 'You are cute catgirl' | lore ask [chain_hash]
+* lore log [chain_hash]
+* lore ref <ref_name> [chain_hash|ref_name]
+...
+
+Maybe lore config ? (add it to cas)
