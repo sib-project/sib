@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${LORE_DIR:?LORE_DIR is not set}"
+
+lgit() {
+    git --git-dir="$LORE_DIR" "$@"
+}
+
+cmd_init() {
+    if [[ -e "$LORE_DIR" ]]; then
+        printf 'lore: %s already exists\n' "$LORE_DIR" >&2
+        exit 1
+    fi
+    mkdir -p "$LORE_DIR"
+    lgit init --bare --quiet
+}
+
+cmd_init_trace() {
+    local marker
+    marker=$(printf 'LOREv1' | lgit hash-object -w --stdin)
+    printf '100644 blob %s\t_LORETRACE\n' "$marker" | lgit mktree
+}
+
+main() {
+    [[ $# -lt 1 ]] && { echo "usage: lore-cas <cmd> [args]" >&2; exit 1; }
+    local cmd="$1"; shift
+    local fn="cmd_${cmd//-/_}"
+    if declare -F "$fn" > /dev/null; then
+        "$fn" "$@"
+    else
+        printf 'lore-cas: unknown command %q\n' "$cmd" >&2
+        exit 1
+    fi
+}
+main "$@"
