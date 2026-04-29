@@ -4,7 +4,13 @@ set -euo pipefail
 : "${LORE_DIR:?LORE_DIR is not set}"
 
 lgit() {
-    git --git-dir="$LORE_DIR" "$@"
+    env GIT_AUTHOR_DATE='@0 +0000' \
+        GIT_COMMITTER_DATE='@0 +0000' \
+        GIT_AUTHOR_NAME='Lore' \
+        GIT_COMMITTER_NAME='Lore' \
+        GIT_AUTHOR_EMAIL='lore@example.com' \
+        GIT_COMMITTER_EMAIL='lore@example.com' \
+        git --git-dir="$LORE_DIR" "$@"
 }
 
 cmd_init() {
@@ -83,6 +89,25 @@ cmd_append_key() {
             format_tree $kob $key
         } | lgit mktree
     fi
+}
+
+# chain-trace [-p <chain>] <trace>
+cmd_chain_trace() {
+    local parent=
+    local trace=
+
+    if [[ $# -eq 1 ]]; then
+        trace="$1"
+    elif [[ $# -eq 3 && "$1" == "-p" ]]; then
+        parent="-p $2"
+        trace="$3"
+    else
+        # TODO: refactor it to use die
+        echo "Usage: chain-trace [-p <chain>] <trace>" >&2
+        exit 1
+    fi
+
+    lgit commit-tree $parent $trace </dev/null
 }
 
 main() {

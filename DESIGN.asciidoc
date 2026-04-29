@@ -112,8 +112,8 @@ _chain object_ in lore:
 -----
 tree <trace_hash>
 parent <chain_hash>
-author "Lore" 0000000000 +0000
-committer "Lore" 0000000000 +0000
+author "Lore <lore@example.com>" 0000000000 +0000
+committer "Lore <lore@example.com>" 0000000000 +0000
 -----
 
 Note that with same trace and parent, the same hash of chain object is
