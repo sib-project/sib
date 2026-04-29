@@ -27,24 +27,62 @@ format_tree() {
     printf '040000 tree %s\t%s\n' "$1" "$2"
 }
 
+# $1: index
+format_key() {
+    # TODO: [-c <offset>:<len>]
+
+    local sob=$(lgit hash-object -w --stdin)
+    local len=$(lgit cat-file blob $sob | wc -c)
+
+    # FIXME: die if $1 > 10^12
+    printf '100644 blob %s\t%012d-O%d-I%d\n' "$sob" $1 0 "$len"
+}
+
+# append to existing key object
+# $1: kob
+append_kob() {
+    # TODO: [-c <offset>:<len>]
+
+    # Currently, it is assumed that the kob is an unconditionally
+    # perfect key object, but there is no magic to support that
+    # assumption. The reason it wasn't included in the design is that
+    # the encoding format itself is magic. Anyway, it seems like it
+    # would be good to implement something like a checker.
+    local index=$(lgit ls-tree $1 | tail -n1 | awk '{ print $4 }' | cut -d'-' -f1)
+
+    {
+        lgit ls-tree $1
+        format_key $((10#$index + 1)) # overflow?
+    } | lgit mktree
+}
+
 cmd_append_key() {
     # TODO: [-r], [-c <offset>:<len>]
 
     local key="$1"
     local tob="$2"
 
-    local sob=$(lgit hash-object -w --stdin)
-    local len=$(lgit cat-file blob $sob | wc -c)
+    # FIXME: check here if tob is corrupted (i.e. multiple same key occur)
+    local kob=$(lgit ls-tree "$tob" | awk -v k="$key" '$4 == k { print $3 }')
 
-    local kob=$(printf '100644 blob %s\t%012d-O%d-I%d\n' "$sob" 1 0 "$len" \
-                    | lgit mktree)
-
-    # FIXME: handle for same key
-
-    {
-        lgit ls-tree $tob
-        format_tree $kob $key
-    } | lgit mktree
+    if [ -n "$kob" ]; then
+        kob=$(append_kob "$kob")
+        lgit ls-tree "$tob" | awk -v k="$key" -v ob="$kob" '
+        BEGIN { FS="\t"; OFS="\t" }
+        {
+            if ($2 == k) {
+                split($1, parts, " ")
+                $1 = parts[1] " " parts[2] " " ob
+            }
+            print $0
+        }' | lgit mktree
+    else
+        kob=$(format_key 1 | lgit mktree)
+        {
+            lgit ls-tree $tob
+            format_tree $kob $key
+        } | lgit mktree
+    fi
 }
 
 main() {
