@@ -94,7 +94,7 @@ in git, more likely
 this. And then we can append or prepend (-r) span to specific key to
 trace object with
 
-* cat blob | lore append-key [-r] <key> [<offset>,<len>] <trace_hash>
+* cat blob | lore append-key [-r] [-c <offset>,<len>] <key> <trace_hash>
 
 getting updated trace_hash value. Thanks to Git's elegant tree
 structure, no redundant objects are created within this process.

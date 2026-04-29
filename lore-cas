@@ -22,6 +22,31 @@ cmd_init_trace() {
     printf '100644 blob %s\t_LORETRACE\n' "$marker" | lgit mktree
 }
 
+# $1: ob, $2: name
+format_tree() {
+    printf '040000 tree %s\t%s\n' "$1" "$2"
+}
+
+cmd_append_key() {
+    # TODO: [-r], [-c <offset>:<len>]
+
+    local key="$1"
+    local tob="$2"
+
+    local sob=$(lgit hash-object -w --stdin)
+    local len=$(lgit cat-file blob $sob | wc -c)
+
+    local kob=$(printf '100644 blob %s\t%012d-O%d-I%d\n' "$sob" 1 0 "$len" \
+                    | lgit mktree)
+
+    # FIXME: handle for same key
+
+    {
+        lgit ls-tree $tob
+        format_tree $kob $key
+    } | lgit mktree
+}
+
 main() {
     [[ $# -lt 1 ]] && { echo "usage: lore-cas <cmd> [args]" >&2; exit 1; }
     local cmd="$1"; shift
