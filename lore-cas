@@ -3,6 +3,11 @@ set -euo pipefail
 
 : "${LORE_DIR:?LORE_DIR is not set}"
 
+die() {
+    [ $# -eq 0 ] || echo fatal: "$@" >&2
+    exit 1
+}
+
 lgit() {
     env GIT_AUTHOR_DATE='@0 +0000' \
         GIT_COMMITTER_DATE='@0 +0000' \
@@ -22,49 +27,18 @@ cmd_init() {
     lgit init --bare --quiet
 }
 
+# $1: blob name
+hf_blob() {
+    [ -n "$1" ] || return 1;
+    printf '100644 blob %s\t%s\n' $(lgit hash-object -w --stdin) "$1"
+}
+
 cmd_init_trace() {
-    local marker
-    marker=$(printf 'LOREv1' | lgit hash-object -w --stdin)
-    printf '100644 blob %s\t_LORETRACE\n' "$marker" | lgit mktree
+    printf 'LOREv1' | hf_blob _LORETRACE | lgit mktree
 }
 
-# $1: ob, $2: name
-format_tree() {
-    printf '040000 tree %s\t%s\n' "$1" "$2"
-}
-
-# $1: index
-format_key() {
-    # TODO: [-c <offset>:<len>]
-
-    local sob=$(lgit hash-object -w --stdin)
-    local len=$(lgit cat-file blob $sob | wc -c)
-
-    # FIXME: die if $1 > 10^12
-    printf '100644 blob %s\t%012d-O%d-I%d\n' "$sob" $1 0 "$len"
-}
-
-# append to existing key object
-# $1: kob
-append_kob() {
-    # TODO: [-c <offset>:<len>]
-
-    # Currently, it is assumed that the kob is an unconditionally
-    # perfect key object, but there is no magic to support that
-    # assumption. The reason it wasn't included in the design is that
-    # the encoding format itself is magic. Anyway, it seems like it
-    # would be good to implement something like a checker.
-    local index=$(lgit ls-tree $1 | tail -n1 | awk '{ print $4 }' | cut -d'-' -f1)
-
-    {
-        lgit ls-tree $1
-        format_key $((10#$index + 1)) # overflow?
-    } | lgit mktree
-}
-
-cmd_append_key() {
-    # TODO: [-r], [-c <offset>:<len>]
-
+# add-key <key> <trace>
+cmd_add_key() {
     local key="$1"
     local tob="$2"
 
@@ -72,21 +46,14 @@ cmd_append_key() {
     local kob=$(lgit ls-tree "$tob" | awk -v k="$key" '$4 == k { print $3 }')
 
     if [ -n "$kob" ]; then
-        kob=$(append_kob "$kob")
-        lgit ls-tree "$tob" | awk -v k="$key" -v ob="$kob" '
-        BEGIN { FS="\t"; OFS="\t" }
-        {
-            if ($2 == k) {
-                split($1, parts, " ")
-                $1 = parts[1] " " parts[2] " " ob
-            }
-            print $0
-        }' | lgit mktree
+        die $key already exists on trace $tob
     else
-        kob=$(format_key 1 | lgit mktree)
+        # The current structure is inefficient because a garbage tree
+        # accumulates during the creation process. There is a need to
+        # migrate to commands like index-key.
         {
             lgit ls-tree $tob
-            format_tree $kob $key
+            hf_blob "$key"
         } | lgit mktree
     fi
 }
@@ -102,9 +69,7 @@ cmd_chain_trace() {
         parent="-p $2"
         trace="$3"
     else
-        # TODO: refactor it to use die
-        echo "Usage: chain-trace [-p <chain>] <trace>" >&2
-        exit 1
+        die "Usage: chain-trace [-p <chain>] <trace>"
     fi
 
     lgit commit-tree $parent $trace </dev/null
