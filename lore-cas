@@ -36,33 +36,6 @@ hf_blob() {
     printf '100644 blob %s\t%s\n' $(lgit hash-object -w --stdin) "$1"
 }
 
-is_dup_key() {
-    local tree=$1
-    lgit ls-tree "$tree" | awk '{print $4}' | sort | uniq -d | grep -q .
-}
-
-# add-key <key> <trace>
-cmd_add_key() {
-    local key="$1"
-    local tob="$2"
-
-    trace_ver $tob >/dev/null || die "$tob is not trace object"
-
-    local kob=$(lgit ls-tree "$tob" | awk -v k="$key" '$4 == k { print $3 }')
-
-    if [ -n "$kob" ]; then
-        die $key already exists on trace $tob
-    else
-        # The current structure is inefficient because a garbage tree
-        # accumulates during the creation process. There is a need to
-        # migrate to commands like index-key.
-        {
-            lgit ls-tree $tob
-            hf_blob "$key"
-        } | lgit mktree
-    fi
-}
-
 # chain-trace [-p <chain>] <trace>
 cmd_chain_trace() {
     local parent=
@@ -71,58 +44,67 @@ cmd_chain_trace() {
     if [[ $# -eq 1 ]]; then
         trace="$1"
     elif [[ $# -eq 3 && "$1" == "-p" ]]; then
+        cmd_ls_trace $2 >/dev/null # check if parent is valid
         parent="-p $2"
         trace="$3"
     else
         die "Usage: chain-trace [-p <chain>] <trace>"
     fi
 
-    cmd_ls_trace $trace && die "$trace has duplicated key"
+    cmd_ls_trace $trace >/dev/null # check if itself is valid
     lgit commit-tree $parent $trace </dev/null
 }
 
-# $1: tree object
-ls_tree_dedup() {
-    local tree=$1
-    local out
-    out=$(lgit ls-tree "$tree") || die "ls-tree failed: $tree"
-
-    echo "$out" | awk '{print $4}' | sort | uniq -d | grep -q . \
-        && { echo "Duplicate key found in $tree" >&2; return 1; }
-
-    echo "$out"
+tf_key() {
+    cut -d' ' -f1
 }
 
-trace_ver() {
-    local ver=$(ls_tree_dedup $1 | grep $TRACE_MAGIC | awk '{ print $3 }')
-
-    [ -z "$ver" ] && return 1
-    ver=$(lgit cat-file blob $ver) || return 1
-
-    printf "$ver"
+tf_is_dup() {
+    tf_key | sort | uniq -d | grep -q .
 }
 
 cmd_mktrace() {
     local lines=$(cat)
 
-    # check duplicate keys
-    echo "$lines" | awk '{print $1}' | sort | uniq -d | grep -q . \
-        && die "duplicate key found in input"
+    echo "$lines" | tf_is_dup && die 'duplicate key found in input'
 
     {
-        printf $TRACE_VERSION | hf_blob $TRACE_MAGIC
-        echo "$lines" | while read key hash; do
-            echo "100644 blob $hash\t$key"
-        done
+        echo -n $TRACE_VERSION | hf_blob $TRACE_MAGIC;
+        [ -n "$lines" ] && echo "$lines" | while read key hash; do
+                printf "100644 blob %s\t%s\n" "$hash" "$key"
+            done
     } | lgit mktree
 }
 
 cmd_ls_trace() {
-    local ver
+    [ -n "$1" ] || die 'usage: ls-trace <trace>'
 
-    ver=$(trace_ver $1) || die "$1 is not trace object"
+    local tmp=$(lgit ls-tree $1 | awk 'NF==4 { print $4, $3 }')
 
-    lgit ls-tree "$1" | grep -v $TRACE_MAGIC | awk 'NF==4 { print $4, $3 }'
+    echo "$tmp" | tf_key | grep -qxF $TRACE_MAGIC || die 'magic not found on trace'
+    echo "$tmp" | tf_is_dup && die 'duplicate key found on trace'
+
+    # Here, every key starting with $TRACE_MAGIC will be considered as
+    # non-key and internal indicator.
+    echo "$tmp" | grep -v "^$TRACE_MAGIC"
+}
+
+# add-key <key> <trace>
+cmd_add_key() {
+    local key="$1"
+    local trace="$2"
+    local tmp
+
+    tmp="$(cmd_ls_trace $trace)"
+
+    if echo "$tmp" | tf_key | grep -qxF "$key"; then
+        die $key already exists on trace $trace
+    else
+        {
+            echo "$tmp"
+            echo "$key" $(lgit hash-object --stdin -w)
+        } | cmd_mktrace
+    fi
 }
 
 main() {
