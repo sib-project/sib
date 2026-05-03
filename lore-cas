@@ -36,10 +36,6 @@ hf_blob() {
     printf '100644 blob %s\t%s\n' $(lgit hash-object -w --stdin) "$1"
 }
 
-cmd_init_trace() {
-    printf $TRACE_VERSION | hf_blob $TRACE_MAGIC | lgit mktree
-}
-
 is_dup_key() {
     local tree=$1
     lgit ls-tree "$tree" | awk '{print $4}' | sort | uniq -d | grep -q .
@@ -81,6 +77,7 @@ cmd_chain_trace() {
         die "Usage: chain-trace [-p <chain>] <trace>"
     fi
 
+    cmd_ls_trace $trace && die "$trace has duplicated key"
     lgit commit-tree $parent $trace </dev/null
 }
 
@@ -103,6 +100,21 @@ trace_ver() {
     ver=$(lgit cat-file blob $ver) || return 1
 
     printf "$ver"
+}
+
+cmd_mktrace() {
+    local lines=$(cat)
+
+    # check duplicate keys
+    echo "$lines" | awk '{print $1}' | sort | uniq -d | grep -q . \
+        && die "duplicate key found in input"
+
+    {
+        printf $TRACE_VERSION | hf_blob $TRACE_MAGIC
+        echo "$lines" | while read key hash; do
+            echo "100644 blob $hash\t$key"
+        done
+    } | lgit mktree
 }
 
 cmd_ls_trace() {
