@@ -40,12 +40,18 @@ cmd_init_trace() {
     printf $TRACE_VERSION | hf_blob $TRACE_MAGIC | lgit mktree
 }
 
+is_dup_key() {
+    local tree=$1
+    lgit ls-tree "$tree" | awk '{print $4}' | sort | uniq -d | grep -q .
+}
+
 # add-key <key> <trace>
 cmd_add_key() {
     local key="$1"
     local tob="$2"
 
-    # FIXME: check here if tob is corrupted (i.e. multiple same key occur)
+    trace_ver $tob >/dev/null || die "$tob is not trace object"
+
     local kob=$(lgit ls-tree "$tob" | awk -v k="$key" '$4 == k { print $3 }')
 
     if [ -n "$kob" ]; then
@@ -78,8 +84,20 @@ cmd_chain_trace() {
     lgit commit-tree $parent $trace </dev/null
 }
 
+# $1: tree object
+ls_tree_dedup() {
+    local tree=$1
+    local out
+    out=$(lgit ls-tree "$tree") || die "ls-tree failed: $tree"
+
+    echo "$out" | awk '{print $4}' | sort | uniq -d | grep -q . \
+        && { echo "Duplicate key found in $tree" >&2; return 1; }
+
+    echo "$out"
+}
+
 trace_ver() {
-    local ver=$(lgit ls-tree $1 | grep $TRACE_MAGIC | awk '{ print $3 }')
+    local ver=$(ls_tree_dedup $1 | grep $TRACE_MAGIC | awk '{ print $3 }')
 
     [ -z "$ver" ] && return 1
     ver=$(lgit cat-file blob $ver) || return 1
