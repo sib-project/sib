@@ -3,6 +3,9 @@ set -euo pipefail
 
 : "${LORE_DIR:?LORE_DIR is not set}"
 
+TRACE_MAGIC=_LORETRACE
+TRACE_VERSION=v1
+
 die() {
     [ $# -eq 0 ] || echo fatal: "$@" >&2
     exit 1
@@ -34,7 +37,7 @@ hf_blob() {
 }
 
 cmd_init_trace() {
-    printf 'LOREv1' | hf_blob _LORETRACE | lgit mktree
+    printf $TRACE_VERSION | hf_blob $TRACE_MAGIC | lgit mktree
 }
 
 # add-key <key> <trace>
@@ -73,6 +76,23 @@ cmd_chain_trace() {
     fi
 
     lgit commit-tree $parent $trace </dev/null
+}
+
+trace_ver() {
+    local ver=$(lgit ls-tree $1 | grep $TRACE_MAGIC | awk '{ print $3 }')
+
+    [ -z "$ver" ] && return 1
+    ver=$(lgit cat-file blob $ver) || return 1
+
+    printf "$ver"
+}
+
+cmd_ls_trace() {
+    local ver
+
+    ver=$(trace_ver $1) || die "$1 is not trace object"
+
+    lgit ls-tree "$1" | grep -v $TRACE_MAGIC | awk 'NF==4 { print $4, $3 }'
 }
 
 main() {
