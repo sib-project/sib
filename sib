@@ -30,6 +30,7 @@ cmd_init() {
     lgit init --bare --quiet
 }
 
+# hash and format blob (to mktree format)
 # $1: blob name
 hf_blob() {
     [ -n "$1" ] || return 1;
@@ -91,6 +92,35 @@ cmd_ls_trace() {
 
 cmd_git() {
     lgit "$@"
+}
+
+
+# hash and format blob (to trace format)
+# $1: blob name
+tf_blob() {
+    hf_blob "$1" | awk '{ print $4, $3 }'
+}
+
+# json -> ls_trace format
+# Input: {"key": "value", "key": "value", ...}
+# Hash every values
+cmd_trace_json() {
+    local json
+    json="$(cat)"
+
+    # Reject null/array/object/non-object
+    [ "$(echo "$json" | jq -r 'type')" = "object" ] \
+        || die 'trace-json: input must be a JSON object'
+
+    echo "$json" | jq -r 'keys_unsorted[]' | while IFS= read -r key; do
+        case "$key" in
+            "$TRACE_MAGIC"*) die "trace-json: reserved key prefix: $key" ;;
+            '') die 'trace-json: empty key' ;;
+        esac
+
+        # Extract value to raw.
+        echo "$json" | jq -j --arg k "$key" '.[$k]' | tf_blob "$key"
+    done
 }
 
 main() {
