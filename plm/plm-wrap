@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Available formats: plm/request(only for dest)/response(only for src)/text(markdown)
+
+set -euo pipefail
+
+NAME=$(basename -- "$0")
+
+usage() {
+    echo "Usage: $NAME [-f,--from <text|plm|response>] \
+[-t,--to <plm|text|request>] \
+[-r,--role <system|user|assistant|tool>] \
+[-m MODEL]" >&2
+}
+
+
+TMP_ERR=$(mktemp)
+
+exec 3>&2 2>"$TMP_ERR"
+
+set -o errtrace -E
+
+PLM_MODEL="${PLM_MODEL:-gpt-4o-mini}"
+PLM_USE_STREAM="${PLM_USE_STREAM:-true}"
+
+source_format="text"
+dest_format="plm"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -r|--role)  PLM_ROLE="$2"; shift 2 ;;
+        -m|--model) PLM_MODEL="$2"; shift 2 ;;
+        -f|--from)  source_format="$2"; shift 2 ;;
+        -t|--to)    dest_format="$2"; shift 2 ;;
+        --no-stream) PLM_USE_STREAM='false'; shift 1 ;;
+        -h|--help)  usage 2>&1; exit 0 ;;
+        *)          usage; exit 1 ;;
+    esac
+done
+
+die() {
+    printf 'err: %s\n' "$1" >&2
+    exit 2
+}
+
+text_to_plm() {
+    jq -Rs --arg role "${PLM_ROLE:-user}" --arg ts "$(date -Is)" \
+       '{role:$role, content:., ts:$ts}' | jq -c .
+}
+
+response_to_plm() {
+  jq -c --arg ts "$(date -Is)" '
+    ( [ .output[] | select(.type=="message" and .role=="assistant") ] | last? ) as $m
+    | {
+        role:   ($m.role // "assistant"),
+        content: (
+          if $m == null then
+            (.output_text // "")
+          else
+            ($m.content // []
+              | map(select(.type=="output_text" or .type=="text") | .text)
+              | join("\n\n"))
+          end
+        ),
+        ts: $ts,
+        meta: { model: .model }
+      }'
+}
+
+src_to_plm() {
+    case "$source_format" in
+        plm)      tee ;;
+        text)     text_to_plm ;;
+        response) response_to_plm ;;
+        request)  die "$source_format: not supported for src" ;;
+        *) die "$source_format: unknown dest format" ;;
+    esac
+}
+
+plm_to_text() {
+    jq -sr \
+       'map(
+            if .role == "user" then
+                .content | split("\n") | map(" > " + . ) | join("\n")
+            elif .role == "assistant" then
+                "✨ " + .content
+            else
+                .content
+            end
+        ) | join("\n\n")'
+}
+
+plm_to_request() {
+    jq -s --arg model "$PLM_MODEL" --argjson stream "$PLM_USE_STREAM" '{
+  model:$model, input:[ .[]|{role,content} ], stream:$stream
+}'
+}
+
+plm_to_dest() {
+    case "$dest_format" in
+        plm)      tee ;;
+        text)     plm_to_text ;;
+        response) die "$dest_format: not supported for dest" ;;
+        request)  plm_to_request ;;
+        *) die "$dest_format: unknown src format" ;;
+    esac
+}
+
+src_to_plm | plm_to_dest

@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+NAME=$(basename -- "$0")
+
+usage() {
+    echo "usage: ${NAME} [--no-auth] [-e|--endpoint ENDPOINT] [-h|--help]\
+set PLM_API_KEY for authentication with ENDPOINT server";
+}
+
+# print message to stderr, response to stdout
+stream() {
+    if [[ "$1" == "true" ]]; then
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+
+            if [[ "$line" == event:* ]]; then
+                local current_event=${line#event: }
+                continue
+            fi
+
+            if [[ "$line" == data:* ]]; then
+                local payload=${line#data: }
+                case "$current_event" in
+                    response.output_text.delta)
+                        jq -rj '.delta // empty' <<< "$payload" >&2
+                        ;;
+                    response.output_text.done)
+                        printf '\n' >&2
+                        ;;
+                    response.completed)
+                        jq '.response' <<< "$payload"
+                        ;;
+                esac
+            fi
+        done
+
+        exit 0;
+    fi
+
+    local response_file=$(mktemp)
+    trap "rm -f '$response_file'" RETURN
+
+    tee "$response_file"
+    jq -r '.output[] | select(.type == "message") | .content[0].text' "$response_file" >&2
+}
+
+main () {
+    local endpoint="${PLM_ENDPOINT:-https://api.openai.com/v1/responses}"
+    local retry="${PLM_RETRY:-3}"
+    local api_key_required="${PLM_API_KEY_REQUIRED:-1}"
+    local api_key="${PLM_API_KEY:-"$OPENAI_API_KEY"}"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -e|--endpoint) endpoint="$2"; shift 2;;
+            --no-auth)     api_key_required='0'; shift;;
+            -h|--help)     usage; exit 0;;
+            *)             echo "unknown arg: $1" >&2; usage; exit 1;;
+        esac
+    done
+
+    local auth_header=()
+
+    if (( api_key_required != 0 )); then
+        if [[ -z "${api_key:-}" ]]; then
+            echo "${NAME}: missing both PLM_API_KEY and OPENAI_API_KEY" >&2
+            exit 2
+        fi
+        auth_header=(-H "Authorization: Bearer ${api_key}")
+    fi
+
+    local request_file=$(mktemp)
+    trap "rm -f '$request_file'" RETURN
+
+    local use_stream="$(tee "$request_file" | jq .stream)"
+
+    curl -sS -N "$endpoint" \
+         -H "Content-Type: application/json" "${auth_header[@]}" \
+         --retry "$retry" --retry-delay 1 \
+         --data-binary @"$request_file" | stream "$use_stream"
+}
+
+main "$@"
