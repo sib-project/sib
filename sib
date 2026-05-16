@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${LORE_DIR:?LORE_DIR is not set}"
+: "${SIB_DIR:?SIB_DIR is not set}"
 
-TRACE_MAGIC=_LORETRACE
+TRACE_MAGIC=_SIBTRACE
 TRACE_VERSION=v1
 
 die() {
@@ -14,19 +14,19 @@ die() {
 lgit() {
     env GIT_AUTHOR_DATE='@0 +0000' \
         GIT_COMMITTER_DATE='@0 +0000' \
-        GIT_AUTHOR_NAME='Lore' \
-        GIT_COMMITTER_NAME='Lore' \
-        GIT_AUTHOR_EMAIL='lore@example.com' \
-        GIT_COMMITTER_EMAIL='lore@example.com' \
-        git --git-dir="$LORE_DIR" "$@"
+        GIT_AUTHOR_NAME='Sib' \
+        GIT_COMMITTER_NAME='Sib' \
+        GIT_AUTHOR_EMAIL='sib@example.com' \
+        GIT_COMMITTER_EMAIL='sib@example.com' \
+        git --git-dir="$SIB_DIR" "$@"
 }
 
 cmd_init() {
-    if [[ -e "$LORE_DIR" ]]; then
-        printf 'lore: %s already exists\n' "$LORE_DIR" >&2
+    if [[ -e "$SIB_DIR" ]]; then
+        printf 'sib: %s already exists\n' "$SIB_DIR" >&2
         exit 1
     fi
-    mkdir -p "$LORE_DIR"
+    mkdir -p "$SIB_DIR"
     lgit init --bare --quiet
 }
 
@@ -94,13 +94,13 @@ cmd_git() {
 }
 
 main() {
-    [[ $# -lt 1 ]] && { echo "usage: lore-cas <cmd> [args]" >&2; exit 1; }
+    [[ $# -lt 1 ]] && { echo "usage: $0 <cmd> [args]" >&2; exit 1; }
     local cmd="$1"; shift
     local fn="cmd_${cmd//-/_}"
     if declare -F "$fn" > /dev/null; then
         "$fn" "$@"
     else
-        printf 'lore-cas: unknown command %q\n' "$cmd" >&2
+        printf '%s: unknown command %q\n' "$0" "$cmd" >&2
         exit 1
     fi
 }
