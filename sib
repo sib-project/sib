@@ -87,7 +87,7 @@ cmd_ls_trace() {
 
     # Here, every key starting with $TRACE_MAGIC will be considered as
     # non-key and internal indicator.
-    echo "$tmp" | grep -v "^$TRACE_MAGIC"
+    echo "$tmp" | grep -v "^$TRACE_MAGIC" || true # return 0 for empty trace
 }
 
 cmd_git() {
