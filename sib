@@ -104,23 +104,27 @@ tf_blob() {
 # json -> ls_trace format
 # Input: {"key": "value", "key": "value", ...}
 # Hash every values
-cmd_mktrace_json() {
+tf_json() {
     local json
     json="$(cat)"
 
     # Reject null/array/object/non-object
     [ "$(echo "$json" | jq -r 'type')" = "object" ] \
-        || die 'trace-json: input must be a JSON object'
+        || die 'input must be a JSON object'
 
     echo "$json" | jq -r 'keys_unsorted[]' | while IFS= read -r key; do
         case "$key" in
-            "$TRACE_MAGIC"*) die "trace-json: reserved key prefix: $key" ;;
-            '') die 'trace-json: empty key' ;;
+            "$TRACE_MAGIC"*) die "reserved key prefix: $key" ;;
+            '') die 'empty key' ;;
         esac
 
         # Extract value to raw.
         echo "$json" | jq -j --arg k "$key" '.[$k]' | tf_blob "$key"
     done
+}
+
+cmd_mktrace_json() {
+    tf_json | cmd_mktrace
 }
 
 # print single trace object to one-line json (jsonl)
@@ -136,7 +140,7 @@ cmd_ls_trace_json() {
 }
 
 cmd_chain_trace_json() {
-    cmd_chain_trace "$@" "$(cmd_mktrace_json | cmd_mktrace)"
+    cmd_chain_trace "$@" "$(cmd_mktrace_json)"
 }
 
 cmd_ls_chain() {
