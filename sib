@@ -123,7 +123,6 @@ cmd_mktrace_json() {
     done
 }
 
-# ls-trace-json <trace>
 # print single trace object to one-line json (jsonl)
 cmd_ls_trace_json() {
     [ -n "$1" ] || die 'usage: ls-trace-json <trace>'
@@ -137,7 +136,35 @@ cmd_ls_trace_json() {
 }
 
 cmd_chain_trace_json() {
-    cmd_chain_trace "$@" "$(cmd_trace_json | cmd_mktrace)"
+    cmd_chain_trace "$@" "$(cmd_mktrace_json | cmd_mktrace)"
+}
+
+cmd_ls_chain() {
+    [ -n "$1" ] || die 'usage: ls-chain <chain-ish>'
+    lgit cat-file commit "$1" | awk '
+        /^$/ { exit }                          # stop at blank line (msg starts)
+        $1 == "tree"   { print "trace " $2 }
+        $1 == "parent" { print "parent " $2 }
+    '
+}
+
+tf_value() {
+    cut -d' ' -f2
+}
+
+trace_of_chain() {
+    cmd_ls_chain "$1" | grep '^trace ' | tf_value
+}
+
+cmd_rev_jsonl() {
+    [ -n "$1" ] || die 'usage: rev-jsonl <chain-ish>'
+    local commits
+    commits=$(lgit rev-list "$1" | tac) || die "rev-list failed for $1"
+    while read -r commit; do
+        local trace
+        trace=$(trace_of_chain "$commit") || die "no trace for $commit"
+        cmd_ls_trace_json "$trace"
+    done <<< "$commits"
 }
 
 main() {
