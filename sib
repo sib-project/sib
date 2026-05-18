@@ -160,10 +160,14 @@ trace_of_chain() {
     cmd_ls_chain "$1" | grep '^trace ' | tf_value
 }
 
+cmd_rev_list() {
+    lgit rev-list "$@" | tac
+}
+
 cmd_rev_jsonl() {
     [ -n "$1" ] || die 'usage: rev-jsonl <chain-ish>'
     local commits
-    commits=$(lgit rev-list "$1" | tac) || die "rev-list failed for $1"
+    commits=$(cmd_rev_list "$1") || die "rev-list failed for $1"
     while read -r commit; do
         local trace
         trace=$(trace_of_chain "$commit") || die "no trace for $commit"
