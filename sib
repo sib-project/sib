@@ -132,7 +132,7 @@ cmd_ls_trace_json() {
     [ -n "$1" ] || die 'usage: ls-trace-json <trace>'
     local entries
     entries=$(cmd_ls_trace "$1") || exit 1
-    local obj='{}'
+    [ -n "$entries" ] || { echo '{}'; return 0; }
     echo "$entries" | while read -r key hash; do
         lgit cat-file blob "$hash" \
             | jq -Rsc --arg k "$key" '{($k): .}'
