@@ -14,10 +14,10 @@ die() {
 lgit() {
     env GIT_AUTHOR_DATE='@0 +0000' \
         GIT_COMMITTER_DATE='@0 +0000' \
-        GIT_AUTHOR_NAME='Sib' \
-        GIT_COMMITTER_NAME='Sib' \
-        GIT_AUTHOR_EMAIL='sib@example.com' \
-        GIT_COMMITTER_EMAIL='sib@example.com' \
+        GIT_AUTHOR_NAME='Sibylline' \
+        GIT_COMMITTER_NAME='Sibylline' \
+        GIT_AUTHOR_EMAIL='sib@local' \
+        GIT_COMMITTER_EMAIL='sib@local' \
         git --git-dir="$SIB_DIR" "$@"
 }
 
@@ -104,7 +104,7 @@ tf_blob() {
 # json -> ls_trace format
 # Input: {"key": "value", "key": "value", ...}
 # Hash every values
-cmd_trace_json() {
+cmd_mktrace_json() {
     local json
     json="$(cat)"
 
@@ -121,6 +121,23 @@ cmd_trace_json() {
         # Extract value to raw.
         echo "$json" | jq -j --arg k "$key" '.[$k]' | tf_blob "$key"
     done
+}
+
+# ls-trace-json <trace>
+# print single trace object to one-line json (jsonl)
+cmd_ls_trace_json() {
+    [ -n "$1" ] || die 'usage: ls-trace-json <trace>'
+    local entries
+    entries=$(cmd_ls_trace "$1") || exit 1
+    local obj='{}'
+    echo "$entries" | while read -r key hash; do
+        lgit cat-file blob "$hash" \
+            | jq -Rsc --arg k "$key" '{($k): .}'
+    done | jq -cs 'add // {}'
+}
+
+cmd_chain_trace_json() {
+    cmd_chain_trace "$@" "$(cmd_trace_json | cmd_mktrace)"
 }
 
 main() {
