@@ -1,0 +1,3 @@
+* Commit incomplete output to the chain when interrupted during
+  streaming in plm-send
+* Create plm-show and print logs using show
