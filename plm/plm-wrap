@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Available formats: plm/request(only for dest)/response(only for src)/text(markdown)
+#
+# plm: (ts, model, content, role) jsonl
 
 set -euo pipefail
 
@@ -62,7 +64,7 @@ response_to_plm() {
           end
         ),
         ts: $ts,
-        meta: { model: .model }
+        model: .model
       }'
 }
 
