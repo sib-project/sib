@@ -9,6 +9,7 @@ usage: ${NAME} [--no-auth] [--no-stream] [-p <chain-ish>] [-e ENDPOINT] [-m MODE
   -e, --endpoint     API endpoint (default \$PLM_ENDPOINT)
   -m, --model        Model name   (default \$PLM_MODEL)
   -p, --parent       Parent chain-ish to chain on (default HEAD)
+  -n, --new          Start new converastion
   -r, --resend       Do not accept input
       --no-stream    Disable streaming (PLM_USE_STREAM=false)
       --no-auth      Do not require API key (PLM_API_KEY_REQUIRED=0)
@@ -27,6 +28,7 @@ main() {
             -e|--endpoint)    need_arg "$1" "$@"; export PLM_ENDPOINT="$2"; shift 2 ;;
             -m|--model)       need_arg "$1" "$@"; export PLM_MODEL="$2"; shift 2 ;;
             -p|--parent)      need_arg "$1" "$@"; parent="$2"; shift 2 ;;
+            -n|--new)         parent=; shift ;;
             -r|--resend)      resend=1; shift ;;
             --no-stream)      export PLM_USE_STREAM='false'; shift ;;
             --no-auth)        export PLM_API_KEY_REQUIRED=0; shift ;;
@@ -34,7 +36,13 @@ main() {
         esac
     done
 
+    # --new sets parent= to make chain-trace-json create a new root
+    # chain. If no arguments are passed to rev-parse, nothing is
+    # printed. Therefore, $parent become empty here as well.
     parent="$(sib rev-parse $parent 2>/dev/null || true)"
+
+    # rev-parse prints empty means there is no ref pointed to by
+    # $parent. In this case, start a new chain and update HEAD.
     parent="${parent:+-p $parent}"
 
     if [[ -z $resend ]]; then
