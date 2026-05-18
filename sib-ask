@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+export PATH="$SCRIPT_DIR:$SCRIPT_DIR/plm:$PATH"
+
+PARENT=
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p) PARENT="$2"; shift 2 ;;
+        *)  break ;;
+    esac
+done
+
+[ $# -eq 1 ] || { echo "usage: sib-ask [-p <chain-ish>] <prompt>" >&2; exit 1; }
+PROMPT="$1"
+
+if [ -z "$PARENT" ]; then
+    PARENT=$(sib rev-parse HEAD 2>/dev/null || true)
+else
+    PARENT=$(sib rev-parse "$PARENT") || exit 1
+fi
+
+user_chain=$(echo "$PROMPT" \
+                 | plm-wrap -f text -t plm -r user \
+                 | sib chain-trace-json ${PARENT:+-p $PARENT})
+
+assistant_chain=$(sib rev-jsonl "$user_chain" \
+                      | tee rev.jsonl \
+                      | plm-wrap -f plm -t request \
+                      | plm-send \
+                      | tee log.json \
+                      | plm-wrap -f response -t plm \
+                      | sib chain-trace-json -p "$user_chain")
+sib update-ref HEAD "$assistant_chain"

@@ -171,6 +171,11 @@ cmd_rev_jsonl() {
     done <<< "$commits"
 }
 
+cmd_rev_parse() {
+    [ $# -eq 1 ] || die 'usage: rev-parse <chain-ish>'
+    lgit rev-parse --verify "$1^{commit}"
+}
+
 #
 # Refs
 #
