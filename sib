@@ -171,6 +171,29 @@ cmd_rev_jsonl() {
     done <<< "$commits"
 }
 
+#
+# Refs
+#
+
+cmd_update_ref() {
+    lgit update-ref "$@"
+}
+
+cmd_show_ref() {
+    [ $# -eq 1 ] || die 'usage: show-ref <ref>'
+    lgit show-ref --verify --hash "$1"
+}
+
+cmd_list_refs() {
+    local prefix=${1:-refs/}
+    lgit for-each-ref --format='%(refname) %(objectname)' "$prefix"
+}
+
+cmd_symbolic_ref() {
+    [ $# -eq 1 ] || die 'usage: symbolic-ref <name> <ref>'
+    lgit symbolic-ref "$@"
+}
+
 main() {
     [[ $# -lt 1 ]] && { echo "usage: $0 <cmd> [args]" >&2; exit 1; }
     local cmd="$1"; shift
