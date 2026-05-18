@@ -2,7 +2,6 @@
 set -euo pipefail
 source lib.bash
 
-NAME=$(basename -- "$0")
 usage() {
     cat <<EOF
 usage: ${NAME} [-n LINES] [<chain-ish>]
@@ -23,33 +22,9 @@ done
 
 target=${1:-HEAD}
 
-if [[ -z $n_lines ]] && command -v glow >/dev/null; then
-    render() { glow -; }
-else
-    render() { cat | sed 's/^/    /'; }
-fi
+show_args=()
+[[ -n $n_lines ]] && show_args=(-n "$n_lines")
 
-truncate_content() {
-    if [[ -n $n_lines ]]; then
-        local content lines
-        content=$(cat)
-        lines=$(printf '%s' "$content" | awk 'END {print NR}')
-        printf '%s' "$content" | head -n "$n_lines"
-        (( lines > n_lines )) && printf '\n\033[2m    ... (%d more lines)\033[0m\n' $((lines - n_lines))
-    else
-        cat
-    fi
-}
-
-paste <(sib rev-list "$target") <(sib rev-jsonl "$target") \
-    | while IFS=$'\t' read -r chain msg; do
-        role=$(jq -r .role <<< "$msg")
-        ts=$(jq -r '.ts // empty' <<< "$msg")
-        
-        printf '\033[33mChain:\033[0m %s\n' "$chain"
-        printf '\033[33mTime: \033[0m %s\n' "$ts"
-        printf '\033[33mRole: \033[0m %s\n' "$role"
-        printf '\n'
-        jq -r .content <<< "$msg" | truncate_content | render
-        printf '\n'
-    done
+sib rev-list "$target" | while read -r chain; do
+    sib-show "${show_args[@]}" "$chain"
+done

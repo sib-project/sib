@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source lib.bash
+
+usage() {
+    cat <<EOF
+usage: ${NAME} [-n LINES] [<chain-ish>]
+  -n LINES    Truncate content to LINES (disables markdown rendering)
+  -h, --help  Show this help
+EOF
+}
+
+n_lines=
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        -n)        n_lines="$2"; shift 2 ;;
+        -*)        echo "unknown arg: $1" >&2; usage; exit 1 ;;
+        *)         break ;;
+    esac
+done
+
+if [[ -z $n_lines ]] && command -v glow >/dev/null; then
+    render() { glow -; }
+else
+    render() { cat | sed 's/^/    /'; }
+fi
+
+truncate_content() {
+    if [[ -n $n_lines ]]; then
+        local content len
+        content=$(cat)
+        len=$(printf '%s\n' "$content" | wc -l)
+
+        printf '%s\n' "$content" | head -n "$n_lines"
+        if (( len > n_lines )); then
+            printf '\033[2m    ... (%d more lines)\033[0m\n' $((len - n_lines))
+        fi
+    else
+        cat
+    fi
+}
+
+target=${1:-HEAD}
+chain=$(sib rev-parse $target)
+
+ls_chain="$(sib ls-chain "$chain")"
+parent="$(echo "$ls_chain" | awk '$1=="parent"{print $2}')"
+trace="$(echo "$ls_chain" | awk '$1=="trace"{print $2}')"
+
+msg="$(sib ls-trace-json $trace)"
+
+# Chain's metadata
+printf '\033[33m%-8s\033[0m %s\n' 'Chain:' "$chain"
+[ -n "$parent" ] && printf '\033[33m%-8s\033[0m %s\n' 'Parent:' "$parent"
+
+# Traverse all key except content
+jq -r 'to_entries | .[] | select(.key != "content") | "\(.key)\t\(.value)"' <<< "$msg" \
+    | while IFS=$'\t' read -r key value; do
+        # Capitalize first letter
+        label=$(printf '%s' "${key^}:")
+        printf '\033[33m%-8s\033[0m %s\n' "$label" "$value"
+    done
+
+printf '\n'
+jq -r .content <<< "$msg" | truncate_content | render
+printf '\n'
