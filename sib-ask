@@ -20,7 +20,7 @@ EOF
 need_arg() { [[ $# -ge 2 ]] || { echo "error: $1 requires an argument" >&2; exit 2; }; }
 
 main() {
-    local parent=HEAD resend=
+    local parent=HEAD parent_arg= resend=
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -36,6 +36,8 @@ main() {
         esac
     done
 
+    [[ -n $resend && -z $parent ]] && die "--new --resend doesn't make sense"
+
     # --new sets parent= to make chain-trace-json create a new root
     # chain. If no arguments are passed to rev-parse, nothing is
     # printed. Therefore, $parent become empty here as well.
@@ -43,15 +45,17 @@ main() {
 
     # rev-parse prints empty means there is no ref pointed to by
     # $parent. In this case, start a new chain and update HEAD.
-    parent="${parent:+-p $parent}"
+    parent_arg="${parent:+-p $parent}"
 
-    if [[ -z $resend ]]; then
-        [[ -t 0 ]] && echo '(stdin, Ctrl+D to send)' >&2
+    {
+        if [[ -z $resend ]]; then
+            [[ -t 0 ]] && echo '(stdin, Ctrl+D to send)' >&2
 
-        plm-wrap -f text -t plm \
-            | sib chain-trace-json $parent \
-            | xargs sib update-ref HEAD
-    fi
+            plm-wrap -f text -t plm | sib chain-trace-json $parent_arg
+        elif [[ -n $parent ]]; then
+            echo $parent
+        fi
+    } | xargs -r sib update-ref HEAD
 
     sib rev-jsonl HEAD \
         | plm-wrap -f plm -t request \
@@ -61,6 +65,6 @@ main() {
         | xargs sib update-ref HEAD
 }
 
-# human-readable message will be streamed to stderr by plm-send.
-# User might want to pipe that message.
-main "$@" 2>&1
+# Human-readable message will be streamed to fd 3 by plm-send. Bind
+# fd 3 to this script's stdout so users can pipe the message.
+main "$@" 3>&1
