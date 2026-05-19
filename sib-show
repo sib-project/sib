@@ -26,18 +26,7 @@ else
 fi
 
 truncate_content() {
-    if [[ -n $n_lines ]]; then
-        local content len
-        content=$(cat)
-        len=$(printf '%s\n' "$content" | wc -l)
-
-        printf '%s\n' "$content" | head -n "$n_lines"
-        if (( len > n_lines )); then
-            printf '\033[2m    ... (%d more lines)\033[0m\n' $((len - n_lines))
-        fi
-    else
-        cat
-    fi
+    [[ -n $n_lines ]] && head -n "$n_lines" || cat
 }
 
 target=${1:-HEAD}
@@ -49,16 +38,20 @@ trace="$(echo "$ls_chain" | awk '$1=="trace"{print $2}')"
 
 msg="$(sib ls-trace-json $trace)"
 
+printkv() {
+    printf '%s %s\n' "$1 $2"
+}
+
 # Chain's metadata
-printf '\033[33m%-8s\033[0m %s\n' 'Chain:' "$chain"
-[ -n "$parent" ] && printf '\033[33m%-8s\033[0m %s\n' 'Parent:' "$parent"
+printkv 'chain' "$chain"
+[ -n "$parent" ] && printkv 'Parent:' "$parent"
 
 # Traverse all key except content
 jq -r 'to_entries | .[] | select(.key != "content") | "\(.key)\t\(.value)"' <<< "$msg" \
     | while IFS=$'\t' read -r key value; do
         # Capitalize first letter
         label=$(printf '%s' "${key^}:")
-        printf '\033[33m%-8s\033[0m %s\n' "$label" "$value"
+        printkv "$label" "$value"
     done
 
 printf '\n'
