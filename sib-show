@@ -36,8 +36,6 @@ ls_chain="$(sib ls-chain "$chain")"
 parent="$(echo "$ls_chain" | awk '$1=="parent"{print $2}')"
 trace="$(echo "$ls_chain" | awk '$1=="trace"{print $2}')"
 
-msg="$(sib ls-trace-json $trace)"
-
 printkv() {
     printf '%s %s\n' "$1 $2"
 }
@@ -46,14 +44,22 @@ printkv() {
 printkv 'chain' "$chain"
 [ -n "$parent" ] && printkv 'Parent:' "$parent"
 
-# Traverse all key except content
-jq -r 'to_entries | .[] | select(.key != "content") | "\(.key)\t\(.value)"' <<< "$msg" \
-    | while IFS=$'\t' read -r key value; do
-        # Capitalize first letter
-        label=$(printf '%s' "${key^}:")
-        printkv "$label" "$value"
-    done
+CONTENT=content
+
+# Traverse all key except $CONTENT
+sib ls-trace $trace | grep -v $CONTENT \
+    | while IFS=$' ' read -r key value; do
+
+    # Capitalize first letter
+    key=$(printf '%s' "${key^}:")
+    value=$(sib git cat-file blob $value)
+    printkv "$key" "$value"
+done
 
 printf '\n'
-jq -r .content <<< "$msg" | truncate_content | render
+sib ls-trace $trace \
+    | grep $CONTENT \
+    | cut -d' ' -f2 \
+    | xargs sib git cat-file blob \
+    | truncate_content | render
 printf '\n'
