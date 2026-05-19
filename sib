@@ -28,6 +28,7 @@ cmd_init() {
     fi
     mkdir -p "$SIB_DIR"
     lgit init --bare --quiet
+    lgit config core.logAllRefUpdates true
 }
 
 # hash and format blob (to mktree format)
@@ -161,7 +162,7 @@ trace_of_chain() {
 }
 
 cmd_rev_list() {
-    lgit rev-list "$@" | tac
+    lgit rev-list --reverse "$@"
 }
 
 cmd_rev_jsonl() {
