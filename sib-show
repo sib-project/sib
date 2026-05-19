@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 source lib.bash
 
 usage() {
@@ -14,7 +13,7 @@ n_lines=
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
-        -n)        n_lines="$2"; shift 2 ;;
+        -n)        n_lines="${2:?$1 requires arg}"; shift 2 ;;
         -*)        echo "unknown arg: $1" >&2; usage; exit 1 ;;
         *)         break ;;
     esac

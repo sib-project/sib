@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
 source lib.bash
 
 usage() {
@@ -17,17 +15,15 @@ usage: ${NAME} [--no-auth] [--no-stream] [-p <chain-ish>] [-e ENDPOINT] [-m MODE
 EOF
 }
 
-need_arg() { [[ $# -ge 2 ]] || { echo "error: $1 requires an argument" >&2; exit 2; }; }
-
 main() {
     local parent=HEAD parent_arg= resend=
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -h|--help)        usage; exit 0 ;;
-            -e|--endpoint)    need_arg "$1" "$@"; export PLM_ENDPOINT="$2"; shift 2 ;;
-            -m|--model)       need_arg "$1" "$@"; export PLM_MODEL="$2"; shift 2 ;;
-            -p|--parent)      need_arg "$1" "$@"; parent="$2"; shift 2 ;;
+            -e|--endpoint)    export PLM_ENDPOINT="${2:?$1 requires arg}"; shift 2 ;;
+            -m|--model)       export PLM_MODEL="${2:?$1 requires arg}"; shift 2 ;;
+            -p|--parent)      parent="${2:?$1 requires arg}"; shift 2 ;;
             -n|--new)         parent=; shift ;;
             -r|--resend)      resend=1; shift ;;
             --no-stream)      export PLM_USE_STREAM='false'; shift ;;
