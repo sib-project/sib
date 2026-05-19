@@ -8,7 +8,15 @@ usage() {
 set PLM_API_KEY for authentication with ENDPOINT server";
 }
 
-# print message to stderr, response to stdout
+# print message to fd 3, response to stdout
+# If fd 3 is not open, fall back to stderr
+ensure_human_fd() {
+    if ! { : >&3; } 2>/dev/null; then
+        exec 3>&2
+    fi
+}
+
+# print message to fd 3, response to stdout
 stream() {
     if [[ "$1" == "true" ]]; then
         while IFS= read -r line; do
@@ -23,10 +31,10 @@ stream() {
                 local payload=${line#data: }
                 case "$current_event" in
                     response.output_text.delta)
-                        jq -rj '.delta // empty' <<< "$payload" >&2
+                        jq -rj '.delta // empty' <<< "$payload" >&3
                         ;;
                     response.output_text.done)
-                        printf '\n' >&2
+                        printf '\n' >&3
                         ;;
                     response.completed)
                         jq '.response' <<< "$payload"
@@ -42,7 +50,8 @@ stream() {
     trap "rm -f '$response_file'" RETURN
 
     tee "$response_file"
-    jq -r '.output[] | select(.type == "message") | .content[0].text' "$response_file" >&2
+    jq -r '.output[] | select(.type == "message") | .content[0].text' \
+       "$response_file" >&3
 }
 
 main () {
