@@ -14,13 +14,6 @@ usage() {
 [-m MODEL]" >&2
 }
 
-
-TMP_ERR=$(mktemp)
-
-exec 3>&2 2>"$TMP_ERR"
-
-set -o errtrace -E
-
 PLM_MODEL="${PLM_MODEL:-gpt-4o-mini}"
 PLM_USE_STREAM="${PLM_USE_STREAM:-true}"
 
