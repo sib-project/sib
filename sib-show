@@ -22,7 +22,7 @@ done
 if [[ -z $n_lines ]] && command -v glow >/dev/null; then
     render() { glow -; }
 else
-    render() { cat | sed 's/^/    /'; }
+    render() { cat | sed 's/^/    /' && true; }
 fi
 
 truncate_content() {
@@ -37,17 +37,17 @@ parent="$(echo "$ls_chain" | awk '$1=="parent"{print $2}')"
 trace="$(echo "$ls_chain" | awk '$1=="trace"{print $2}')"
 
 printkv() {
-    printf '%s %s\n' "$1 $2"
+    printf '%s %s\n' "$1" "$2"
 }
 
 # Chain's metadata
 printkv 'chain' "$chain"
-[ -n "$parent" ] && printkv 'Parent:' "$parent"
+[[ -n $parent ]] && printkv 'Parent:' "$parent"
 
 CONTENT=content
 
 # Traverse all key except $CONTENT
-sib ls-trace $trace | grep -v $CONTENT \
+sib ls-trace $trace | awk -v k="$CONTENT" '$1 != k { print }' \
     | while IFS=$' ' read -r key value; do
 
     # Capitalize first letter
@@ -57,9 +57,7 @@ sib ls-trace $trace | grep -v $CONTENT \
 done
 
 printf '\n'
-sib ls-trace $trace \
-    | grep $CONTENT \
-    | cut -d' ' -f2 \
+sib ls-trace $trace | awk -v k="$CONTENT" '$1 == k { print $2 }' \
     | xargs sib git cat-file blob \
     | truncate_content | render
 printf '\n'
