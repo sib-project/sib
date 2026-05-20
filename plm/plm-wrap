@@ -85,9 +85,22 @@ plm_to_text() {
 }
 
 plm_to_request() {
-    jq -s --arg model "$PLM_MODEL" --argjson stream "$PLM_USE_STREAM" '{
-  model:$model, input:[ .[]|{role,content} ], stream:$stream
-}'
+    jq -s \
+       --arg model "$PLM_MODEL" \
+       --argjson stream "$PLM_USE_STREAM" \
+       --arg temp "${PLM_TEMP:-}" \
+       --arg top_p "${PLM_TOP_P:-}" \
+       --arg fpen "${PLM_FREQ_PENALTY:-}" \
+       --arg ppen "${PLM_PRES_PENALTY:-}" \
+       '{
+          model: $model,
+          input: [ .[] | {role, content} ],
+          stream: $stream
+        }
+        | if $temp  != "" then .temperature       = ($temp  | tonumber) else . end
+        | if $top_p != "" then .top_p             = ($top_p | tonumber) else . end
+        | if $fpen  != "" then .frequency_penalty = ($fpen  | tonumber) else . end
+        | if $ppen  != "" then .presence_penalty  = ($ppen  | tonumber) else . end'
 }
 
 plm_to_dest() {
