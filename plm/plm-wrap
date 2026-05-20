@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Available formats: plm/request(only for dest)/response(only for src)/text(markdown)
 #
-# plm: (ts, model, content, role) jsonl
+# plm: (model, content, role) jsonl
 
 set -euo pipefail
 
@@ -38,12 +38,11 @@ die() {
 }
 
 text_to_plm() {
-    jq -Rs --arg role "${PLM_ROLE:-user}" --arg ts "$(date -Is)" \
-       '{role:$role, content:., ts:$ts}' | jq -c .
+    jq -Rs --arg role "${PLM_ROLE:-user}" '{role:$role, content:.}' | jq -c .
 }
 
 response_to_plm() {
-  jq -c --arg ts "$(date -Is)" '
+  jq -c '
     ( [ .output[] | select(.type=="message" and .role=="assistant") ] | last? ) as $m
     | {
         role:   ($m.role // "assistant"),
@@ -56,7 +55,6 @@ response_to_plm() {
               | join("\n\n"))
           end
         ),
-        ts: $ts,
         model: .model
       }'
 }
