@@ -19,11 +19,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -z $n_lines ]] && command -v glow >/dev/null; then
-    render() { glow -; }
-else
-    render() { cat | sed 's/^/    /' && true; }
-fi
+render() {
+    cat | sed 's/^/    /' && true;
+}
 
 truncate_content() {
     [[ -n $n_lines ]] && head -n "$n_lines" || cat
