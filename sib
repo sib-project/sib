@@ -144,6 +144,25 @@ cmd_chain_trace_json() {
     cmd_chain_trace "$@" "$(cmd_mktrace_json)"
 }
 
+cmd_chain_jsonl() {
+    local line trace chain parent= n=0
+    while IFS= read -r line || [ -n "$line" ]; do
+        [ -n "$line" ] || continue          # skip blank lines
+        trace=$(printf '%s' "$line" | cmd_mktrace_json) \
+            || die "mktrace failed at line $((n+1))"
+        if [ -z "$parent" ]; then
+            chain=$(cmd_chain_trace "$trace")
+        else
+            chain=$(cmd_chain_trace -p "$parent" "$trace")
+        fi
+        parent="$chain"
+        n=$((n+1))
+    done
+
+    [ "$n" -gt 0 ] || die 'empty input'
+    echo "$chain"
+}
+
 cmd_ls_chain() {
     [ -n "$1" ] || die 'usage: ls-chain <chain-ish>'
     lgit cat-file commit "$1" | awk '
