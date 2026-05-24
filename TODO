@@ -3,3 +3,4 @@
 * Create sib-show and print logs using show
   - Add sib-show -k <key> [<chain-ish>]
 * Add sib-ask -t <ref>; update-ref current HEAD and then send turn
+* Add sib-edit <chain-ish>; edit turn (rebase)

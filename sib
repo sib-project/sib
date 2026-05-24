@@ -12,9 +12,7 @@ die() {
 }
 
 lgit() {
-    env GIT_AUTHOR_DATE='@0 +0000' \
-        GIT_COMMITTER_DATE='@0 +0000' \
-        GIT_AUTHOR_NAME='Sibylline' \
+    env GIT_AUTHOR_NAME='Sibylline' \
         GIT_COMMITTER_NAME='Sibylline' \
         GIT_AUTHOR_EMAIL='sib@local' \
         GIT_COMMITTER_EMAIL='sib@local' \
