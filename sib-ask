@@ -7,6 +7,7 @@ usage: ${NAME} [--no-auth] [--no-stream] [-p <chain-ish>] [-e ENDPOINT] [-m MODE
   -e, --endpoint     API endpoint (default \$PLM_ENDPOINT)
   -m, --model        Model name   (default \$PLM_MODEL)
   -p, --parent       Parent chain-ish to chain on (default HEAD)
+  -t, --tag          Update-ref <ref> with chain pointing by HEAD before ask
   -n, --new          Start new converastion
   -r, --resend       Do not accept input
       --no-stream    Disable streaming (PLM_USE_STREAM=false)
@@ -16,7 +17,7 @@ EOF
 }
 
 main() {
-    local parent=HEAD parent_arg= resend=
+    local parent=HEAD parent_arg= resend= ref=
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -24,6 +25,7 @@ main() {
             -e|--endpoint)    export PLM_ENDPOINT="${2:?$1 requires arg}"; shift 2 ;;
             -m|--model)       export PLM_MODEL="${2:?$1 requires arg}"; shift 2 ;;
             -p|--parent)      parent="${2:?$1 requires arg}"; shift 2 ;;
+            -t|--tag)         ref="${2:?$1 requires arg}"; shift 2 ;;
             -n|--new)         parent=; shift ;;
             -r|--resend)      resend=1; shift ;;
             --no-stream)      export PLM_USE_STREAM='false'; shift ;;
@@ -33,6 +35,8 @@ main() {
     done
 
     [[ -n $resend && -z $parent ]] && die "--new --resend doesn't make sense"
+
+    [[ -n $ref ]] && sib update-ref "$ref" "$(sib rev-parse HEAD)"
 
     # --new sets parent= to make chain-trace-json create a new root
     # chain. If no arguments are passed to rev-parse, nothing is
