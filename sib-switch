@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+source lib.bash
+
+usage() {
+    cat <<EOF
+usage: ${NAME} [-s] <chain-ish>
+
+Switch HEAD to <chain-ish>
+
+Options:
+  -s   Symbolic ref HEAD to <chain-ish>. Fail if <chain-ish> is
+       literal chain hash
+  -h   Show this help
+EOF
+}
+
+symbolic=
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h)  usage; exit 0 ;;
+        -s)  symbolic=true; shift ;;
+        --)  shift; break ;;
+        -*)  echo "unknown option: $1" >&2; usage; exit 1 ;;
+        *)   break ;;
+    esac
+done
+
+[[ $# -eq 1 ]] || { usage >&2; exit 1; }
+chain="$1"
+
+is_ref() {
+    [[ -f "$SIB_DIR/$1" ]]
+}
+
+if [[ -n $symbolic ]]; then
+    is_ref "$chain" || die "-s set but $chain is not ref"
+    sib symbolic-ref -m "switch to symbolic $chain" "$chain" HEAD
+else
+    res=$(sib rev-parse "$chain" 2>/dev/null) || die "$chain is invalid"
+    sib update-ref -m "switch to $chain" --no-deref HEAD $res
+fi
