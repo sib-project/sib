@@ -36,7 +36,8 @@ main() {
 
     [[ -n $resend && -z $parent ]] && die "--new --resend doesn't make sense"
 
-    [[ -n $ref ]] && sib update-ref "$ref" "$(sib rev-parse HEAD)"
+    [[ -n $ref ]] && sib update-ref -m 'ask: add tag by -t' \
+                         "$ref" "$(sib rev-parse HEAD)"
 
     # --new sets parent= to make chain-trace-json create a new root
     # chain. If no arguments are passed to rev-parse, nothing is
@@ -55,14 +56,14 @@ main() {
         elif [[ -n $parent ]]; then
             echo $parent
         fi
-    } | xargs -r sib update-ref HEAD
+    } | xargs -r sib update-ref -m 'ask: chain user turn' HEAD
 
     sib rev-jsonl HEAD \
         | plm-wrap -f plm -t request \
         | plm-send \
         | plm-wrap -f response -t plm -r assistant \
         | sib chain-trace-json -p HEAD \
-        | xargs sib update-ref HEAD
+        | xargs sib update-ref -m 'ask: chain agent turn' HEAD
 }
 
 # Human-readable message will be streamed to fd 3 by plm-send. Bind
