@@ -30,12 +30,12 @@ done
 chain="$1"
 
 is_ref() {
-    [[ -f "$SIB_DIR/$1" ]]
+    sib show-ref "$1" >/dev/null 2>&1
 }
 
 if [[ -n $symbolic ]]; then
     is_ref "$chain" || die "-s set but $chain is not ref"
-    sib symbolic-ref -m "switch to symbolic $chain" "$chain" HEAD
+    sib symbolic-ref -m "switch to symbolic $chain" HEAD "$chain"
 else
     res=$(sib rev-parse "$chain" 2>/dev/null) || die "$chain is invalid"
     sib update-ref -m "switch to $chain" --no-deref HEAD $res
