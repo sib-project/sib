@@ -39,6 +39,10 @@ main() {
     [[ -n $ref ]] && sib update-ref -m 'ask: add tag by -t' \
                          "$ref" "$(sib rev-parse HEAD)"
 
+    # TODO: dedup refs/conv/scratch with sib init
+    [[ -z $parent ]] && sib symbolic-ref -m 'ask: start new conversation' \
+                            HEAD refs/conv/scratch
+
     # --new sets parent= to make chain-trace-json create a new root
     # chain. If no arguments are passed to rev-parse, nothing is
     # printed. Therefore, $parent become empty here as well.
