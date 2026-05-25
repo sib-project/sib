@@ -26,6 +26,8 @@ cmd_init() {
     fi
     mkdir -p "$SIB_DIR"
     lgit init --bare --quiet
+    rm -rf "$SIB_DIR/refs/heads" "$SIB_DIR/refs/tags"
+    echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
     lgit config core.logAllRefUpdates true
 }
 
