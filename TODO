@@ -6,3 +6,10 @@
 ** TODO devise simpler interface
 * TODO Fix only refs/heads are created in the reflog
 * TODO Librarize awk '$1=="trace"{print $2}' patterns
+* TODO discard refs/conv/scratch and set default state to detatched
+Currently, sib init and sib-ask use refs/conv/scratch by default, but
+sib-switch switches based on the detached HEAD state. Although sib-ask
+works even in the detached state, it will confuse users. Ideally, it
+would be cleaner to just make detached the default, but I am concerned
+because Git sometimes throws an error if nothing is in HEAD in the
+initial state.
