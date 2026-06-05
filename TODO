@@ -1,6 +1,7 @@
-* Commit incomplete output to the chain when interrupted during
-  streaming in plm-send
+* TODO Commit incomplete output to the chain when interrupted during streaming in plm-send
 * DONE Create sib-show and print logs using show
-  - Add sib-show -k <key> [<chain-ish>]
+** TODO Add sib-show -k <key> [<chain-ish>]
 * DONE Add sib-ask -t <ref>; update-ref current HEAD and then send turn
-* Add sib-edit <chain-ish>; edit turn (rebase)
+* DONE Add sib-edit <chain-ish>; edit turn (rebase HEAD onto edited <chain-ish>)
+** TODO devise simpler interface
+* TODO Fix only refs/heads are created in the reflog

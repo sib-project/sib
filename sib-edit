@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+. lib.bash
+
+chain_ish="${1:-HEAD}"
+chain=$(sib rev-parse "$chain_ish")
+[[ -z $chain ]] && die Invalid: $chain_ish
+
+# List to rebase
+rev_list=()
+found=0
+while IFS= read -r rev; do
+    [ "$rev" = "$chain" ] && found=1
+    (( found )) && rev_list+=("$rev")
+done < <(sib rev-list HEAD)
+(( found )) || die "$chain_ish not in HEAD chain"
+
+WORKDIR=$(mktemp -d /tmp/sib.XXXXXX)
+trap 'rm -rf $WORKDIR' EXIT
+cd $WORKDIR
+
+EB=content
+TRACE=trace
+NTRACE=ntrace
+
+sib ls-trace $chain \
+    | tee $TRACE \
+    | awk '$1=="content"{print $2}' \
+    | xargs -r sib git cat-file blob > $EB
+
+editor=${EDITOR:-nano}
+$editor $EB || die $editor returns $?
+
+blob=$(sib git hash-object -w $EB)
+[[ -z $blob ]] && die
+awk -v blob=$blob '
+{
+  if ($1=="content") {
+    print "content", blob;
+  } else {
+    print $0;
+  }
+}' $TRACE > $NTRACE || die Failed to replace content in trace format
+mv -f -- $NTRACE $TRACE
+
+# Edit target chain
+parent=$(sib ls-chain ${rev_list[0]} | awk '$1=="parent"{print $2}') || die
+trace=$(cat $TRACE | sib mktrace) || die
+if [[ -z $parent ]]; then
+    parent=$(sib chain-trace $trace) || die
+else
+    parent=$(sib chain-trace -p $parent $trace) || die
+fi
+
+# Rebase else onto target
+for (( i = 1; i < ${#rev_list[@]}; i++ )); do
+    [[ -z $parent ]] && die cannot find parent on index $i
+    trace=$(sib ls-chain ${rev_list[i]} | awk '$1=="trace"{print $2}') || die
+    parent=$(sib chain-trace -p $parent $trace) || die
+done
+
+echo $parent
