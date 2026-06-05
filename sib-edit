@@ -23,15 +23,21 @@ EB=content
 TRACE=trace
 NTRACE=ntrace
 
+# FIXME: exit on awk just in case
 sib ls-trace $chain \
     | tee $TRACE \
-    | awk '$1=="content"{print $2}' \
+    | awk '$1=="content"{print $2; exit}' \
+    | tee oldblob \
     | xargs -r sib git cat-file blob > $EB
+[[ ${PIPESTATUS[0]} -eq 0 ]] || die wrong $chain from $chain_ish
+[[ -s $TRACE ]] || die empty trace
 
 editor=${EDITOR:-nano}
 $editor $EB || die $editor returns $?
 
-blob=$(sib git hash-object -w $EB)
+blob=$(sib git hash-object -w $EB) || die
+[[ $(cat oldblob) == $blob ]] && exit 0 # no changes
+
 [[ -z $blob ]] && die
 awk -v blob=$blob '
 {
