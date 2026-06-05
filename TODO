@@ -5,3 +5,4 @@
 * DONE Add sib-edit <chain-ish>; edit turn (rebase HEAD onto edited <chain-ish>)
 ** TODO devise simpler interface
 * TODO Fix only refs/heads are created in the reflog
+* TODO Librarize awk '$1=="trace"{print $2}' patterns
