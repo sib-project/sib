@@ -14,6 +14,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         -n)        n_lines="${2:?$1 requires arg}"; shift 2 ;;
+        -k)        key="${2:?$1 requires arg}"; shift 2 ;;
         -*)        echo "unknown arg: $1" >&2; usage; exit 1 ;;
         *)         break ;;
     esac
@@ -30,6 +31,14 @@ truncate_content() {
 target=${1:-HEAD}
 chain=$(sib rev-parse $target)
 
+if [[ ! -z $key ]]; then
+    sib ls-trace $chain \
+        | awk -v k=$key '$1 == k { print $2 }' \
+        | xargs sib git cat-file blob
+    exit 0
+fi
+
+# Normal output
 echo "chain $chain"
 
 CONTENT=content

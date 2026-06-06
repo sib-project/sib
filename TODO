@@ -1,6 +1,6 @@
 * TODO Commit incomplete output to the chain when interrupted during streaming in plm-send
 * DONE Create sib-show and print logs using show
-** TODO Add sib-show -k <key> [<chain-ish>]
+** DONE Add sib-show -k <key> [<chain-ish>]
 * DONE Add sib-ask -t <ref>; update-ref current HEAD and then send turn
 * DONE Add sib-edit <chain-ish>; edit turn (rebase HEAD onto edited <chain-ish>)
 ** TODO devise simpler interface
