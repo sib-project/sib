@@ -4,7 +4,7 @@
 * DONE Add sib-ask -t <ref>; update-ref current HEAD and then send turn
 * DONE Add sib-edit <chain-ish>; edit turn (rebase HEAD onto edited <chain-ish>)
 ** TODO devise simpler interface
-* TODO Fix only refs/heads are created in the reflog
+* DONE Fix only refs/heads are created in the reflog
 * TODO Librarize awk '$1=="trace"{print $2}' patterns
 * TODO discard refs/conv/scratch and set default state to detatched
 Currently, sib init and sib-ask use refs/conv/scratch by default, but

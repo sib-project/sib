@@ -28,7 +28,6 @@ cmd_init() {
     lgit init --bare --quiet
     rm -rf "$SIB_DIR/refs/heads" "$SIB_DIR/refs/tags"
     echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
-    lgit config core.logAllRefUpdates true
 }
 
 # hash and format blob (to mktree format)
@@ -205,7 +204,7 @@ cmd_rev_parse() {
 #
 
 cmd_update_ref() {
-    lgit update-ref "$@"
+    lgit update-ref --create-reflog "$@"
 }
 
 cmd_show_ref() {
