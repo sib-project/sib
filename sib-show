@@ -3,8 +3,9 @@ source lib.bash
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-n LINES] [<chain-ish>]
-  -n LINES    Truncate content to LINES (disables markdown rendering)
+usage: ${NAME} [-k <KEY>] [-n <LINES>] [<chain-ish>]
+  -n LINES    Truncate content to LINES
+  -k KEY      Only show KEY's value on chain
   -h, --help  Show this help
 EOF
 }
