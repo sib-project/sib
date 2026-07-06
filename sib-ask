@@ -9,7 +9,8 @@ usage: ${NAME} [--no-auth] [--no-stream] [-p <chain-ish>] [-e ENDPOINT] [-m MODE
   -p, --parent       Parent chain-ish to chain on (default HEAD)
   -t, --tag          Update-ref <ref> with chain pointing by HEAD before ask
   -n, --new          Start new converastion
-  -r, --resend       Do not accept input
+  -r, --resend       Do not accept or chain input (use with -p)
+  -c, --only-chain   Chain user turn only, no API call done
       --no-stream    Disable streaming (PLM_USE_STREAM=false)
       --no-auth      Do not require API key (PLM_API_KEY_REQUIRED=0)
   -h, --help         Show this help
@@ -17,7 +18,7 @@ EOF
 }
 
 main() {
-    local parent=HEAD parent_arg= resend= ref=
+    local parent=HEAD parent_arg= resend= ref= only_chain=
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -28,6 +29,7 @@ main() {
             -t|--tag)         ref="${2:?$1 requires arg}"; shift 2 ;;
             -n|--new)         parent=; shift ;;
             -r|--resend)      resend=1; shift ;;
+            -c|--only-chain)  only_chain=1; shift ;;
             --no-stream)      export PLM_USE_STREAM='false'; shift ;;
             --no-auth)        export PLM_API_KEY_REQUIRED=0; shift ;;
             -*|*)             echo "unknown arg: $1" >&2; usage; exit 1 ;;
@@ -61,6 +63,8 @@ main() {
             echo $parent
         fi
     } | xargs -r sib update-ref -m 'ask: chain user turn' HEAD
+
+    [[ -n $only_chain ]] && exit 0
 
     sib rev-jsonl HEAD \
         | plm-wrap -f plm -t request \
