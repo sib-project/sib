@@ -199,6 +199,16 @@ cmd_rev_parse() {
     lgit rev-parse --verify "$1^{commit}"
 }
 
+cmd_status() {
+    local head_ref head_hash
+    head_ref=$(lgit symbolic-ref -q HEAD 2>/dev/null || echo '(detached)')
+    head_hash=$(lgit rev-parse -q --verify HEAD 2>/dev/null || echo '(unborn)')
+
+    printf 'SIB_DIR:   %s\n' "$SIB_DIR"
+    printf 'HEAD:      %s\n' "$head_ref"
+    printf 'chain:     %s\n' "$head_hash"
+}
+
 #
 # Refs
 #
