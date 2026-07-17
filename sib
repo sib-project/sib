@@ -21,16 +21,18 @@ lgit() {
 }
 
 cmd_init() {
-    if [[ -e "$SIB_DIR" ]]; then
-        printf 'sib: %s already exists\n' "$SIB_DIR" >&2
-        exit 1
-    fi
+    local reinit=
+    [[ -f "$SIB_DIR/HEAD" ]] && reinit=true
+
     mkdir -p "$SIB_DIR"
     lgit init --bare --quiet
-    rm -rf "$SIB_DIR/refs/heads" "$SIB_DIR/refs/tags"
-    echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
 
-    echo "sib store has been initialized on $SIB_DIR" >&2
+    if [[ -z $reinit ]]; then
+        echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
+        echo "Initialized empty Sib store in $SIB_DIR" >&2
+    else
+        echo "Reinitialized existing Sib store in $SIB_DIR" >&2
+    fi
 }
 
 # hash and format blob (to mktree format)
