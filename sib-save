@@ -11,20 +11,33 @@ usage: ${NAME} [-h] <name> [<chain-ish>]
 Save <chain-ish> as <name> (default: HEAD)
 
   -d    Delete <name>
-  -l    List saves in refs/conv/*
+  -l    List saved names
   -h    Show this help
 EOF
 }
 
-delete=
-while getopts hd o; do
+delete= list=
+while getopts hdl o; do
     case "$o" in
         h) usage; exit 0 ;;
         d) delete=1 ;;
+        l) list=1 ;;
         *) usage >&2; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
+
+[[ -z $delete || -z $list ]] || {
+    echo fatal: -d and -l cannot be used together >&2
+    usage
+    exit 1
+}
+
+if [[ -n $list ]]; then
+    # TODO: add pattern matching like git branch -l [<pattern>]
+    sib list-refs refs/conv/ | awk '{ sub(/^refs\/conv\//, "", $1); print $1 }'
+    exit
+fi
 
 if [[ -n $delete ]]; then
     [[ $# -eq 1 ]] || {
