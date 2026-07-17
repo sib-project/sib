@@ -4,11 +4,11 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-n] [-r] [-c] [--no-auth] [--no-stream] [-p <chain-ish>] [-t <refname>] [-e ENDPOINT] [-m MODEL]
+usage: ${NAME} [-n] [-r] [-c] [--no-auth] [--no-stream] [-p <chain-ish>] [-s <name>] [-e ENDPOINT] [-m MODEL]
   -e, --endpoint     API endpoint (default \$PLM_ENDPOINT)
   -m, --model        Model name   (default \$PLM_MODEL)
   -p, --parent       Parent chain-ish to chain on (default HEAD)
-  -t, --tag          Update-ref <refname> with chain pointing by HEAD before ask
+  -s, --save         Save the current HEAD as <name> before asking
   -n, --new          Start new converastion
   -r, --resend       Do not accept or chain input (use with -p)
   -c, --only-chain   Chain user turn only, no API call done
@@ -27,7 +27,7 @@ main() {
             -e|--endpoint)    export PLM_ENDPOINT="${2:?$1 requires arg}"; shift 2 ;;
             -m|--model)       export PLM_MODEL="${2:?$1 requires arg}"; shift 2 ;;
             -p|--parent)      parent="${2:?$1 requires arg}"; shift 2 ;;
-            -t|--tag)         ref="${2:?$1 requires arg}"; shift 2 ;;
+            -s|--save)        ref="${2:?$1 requires arg}"; shift 2 ;;
             -n|--new)         parent=; shift ;;
             -r|--resend)      resend=1; shift ;;
             -c|--only-chain)  only_chain=1; shift ;;
@@ -39,8 +39,7 @@ main() {
 
     [[ -n $resend && -z $parent ]] && die "--new --resend doesn't make sense"
 
-    [[ -n $ref ]] && sib update-ref -m 'ask: add tag by -t' \
-                         "$ref" "$(sib rev-parse HEAD)"
+    [[ -n $ref ]] && sib save -- "$ref"
 
     # TODO: dedup refs/conv/scratch with sib init
     [[ -z $parent ]] && sib symbolic-ref -m 'ask: start new conversation' \

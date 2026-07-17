@@ -6,10 +6,12 @@ usage() {
     cat <<EOF
 usage: ${NAME} [-h] <name> [<chain-ish>]
        ${NAME} -d <name>
+       ${NAME} -l
 
 Save <chain-ish> as <name> (default: HEAD)
 
   -d    Delete <name>
+  -l    List saves in refs/conv/*
   -h    Show this help
 EOF
 }
