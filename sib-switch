@@ -3,14 +3,12 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-s] <chain-ish>
+usage: ${NAME} [-s] [-h] <chain-ish>
 
-Switch HEAD to <chain-ish>
+Move HEAD to <chain-ish>.
 
-Options:
-  -s   Symbolic ref HEAD to <chain-ish>. Fail if <chain-ish> is
-       literal chain hash
-  -h   Show this help
+By default, HEAD is detached at the resolved chain. With -s,
+<chain-ish> must be a ref and HEAD follows that ref.
 EOF
 }
 
