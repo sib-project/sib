@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${SIB_DIR:?SIB_DIR is not set}"
+: "${SIB_DIR:=${XDG_STATE_HOME:-$HOME/.local/state}/sib}"
+export SIB_DIR
 
 TRACE_MAGIC=_SIBTRACE
 TRACE_VERSION=v1
@@ -28,6 +29,8 @@ cmd_init() {
     lgit init --bare --quiet
     rm -rf "$SIB_DIR/refs/heads" "$SIB_DIR/refs/tags"
     echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
+
+    echo "sib store has been initialized on $SIB_DIR" >&2
 }
 
 # hash and format blob (to mktree format)
@@ -231,15 +234,30 @@ cmd_symbolic_ref() {
     lgit symbolic-ref "$@"
 }
 
-main() {
-    [[ $# -lt 1 ]] && { echo "usage: $0 <cmd> [args]" >&2; exit 1; }
-    local cmd="$1"; shift
-    local fn="cmd_${cmd//-/_}"
-    if declare -F "$fn" > /dev/null; then
-        "$fn" "$@"
-    else
-        printf '%s: unknown command %q\n' "$0" "$cmd" >&2
-        exit 1
-    fi
-}
-main "$@"
+#
+# dispatcher
+#
+
+[[ $# -lt 1 ]] && { echo "usage: sib <command> [args]" >&2; exit 1; }
+
+cmd="$1"; shift
+
+if [[ $cmd != "init" ]]; then
+    lgit rev-parse --resolve-git-dir "$SIB_DIR" &>/dev/null \
+        || die "$SIB_DIR: not a sib storage: run \`sib init'"
+fi
+
+# We symlink /usr/bin/sib -> ../libexec/sib-core
+# script_dir need to be realpath ../libexec/sib-core
+script_dir="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
+
+export PATH="$script_dir:$PATH"
+
+fn="cmd_${cmd//-/_}"
+if declare -F "$fn" > /dev/null; then
+    "$fn" "$@"
+elif command -v "sib-$cmd" >/dev/null; then
+    exec "sib-$cmd" "$@"
+else
+    die sib: unknown command $cmd
+fi

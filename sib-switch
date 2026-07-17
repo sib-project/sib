@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source lib.bash
+. lib.bash
 
 usage() {
     cat <<EOF
