@@ -58,6 +58,9 @@ else
     parent=$(sib chain-trace -p $parent $trace) || die
 fi
 
+# print edited chain's hash to stdout
+echo $parent
+
 # Rebase else onto target
 for (( i = 1; i < ${#rev_list[@]}; i++ )); do
     [[ -z $parent ]] && die cannot find parent on index $i
@@ -65,4 +68,4 @@ for (( i = 1; i < ${#rev_list[@]}; i++ )); do
     parent=$(sib chain-trace -p $parent $trace) || die
 done
 
-echo $parent
+sib update-ref -m "edit $chain_ish" HEAD $parent
