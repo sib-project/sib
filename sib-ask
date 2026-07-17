@@ -41,9 +41,10 @@ main() {
 
     [[ -n $ref ]] && sib save -- "$ref"
 
-    # TODO: dedup refs/conv/scratch with sib init
-    [[ -z $parent ]] && sib symbolic-ref -m 'ask: start new conversation' \
-                            HEAD refs/conv/scratch
+    local unborn=refs/sib/unborn
+
+    # --new should not taint existing save (or other refs)
+    [[ -z $parent ]] && sib symbolic-ref HEAD $unborn
 
     # --new sets parent= to make chain-trace-json create a new root
     # chain. If no arguments are passed to rev-parse, nothing is
@@ -63,6 +64,16 @@ main() {
             echo $parent
         fi
     } | xargs -r sib update-ref -m 'ask: chain user turn' HEAD
+
+    # A fresh store or --new initially uses an internal symbolic ref.
+    # Once the first turn exists, replace it with a direct HEAD and remove
+    # the bootstrap ref.
+    if [[ $(sib symbolic-ref -q HEAD 2>/dev/null || true) == "$unborn" ]]; then
+        sib switch HEAD
+        sib update-ref --no-deref -d "$unborn"
+    fi
+
+    [[ -n $only_chain ]] && exit 0
 
     [[ -n $only_chain ]] && exit 0
 

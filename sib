@@ -28,7 +28,7 @@ cmd_init() {
     lgit init --bare --quiet
 
     if [[ -z $reinit ]]; then
-        echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
+        echo 'ref: refs/sib/unborn' > "$SIB_DIR/HEAD"
         echo "Initialized empty Sib store in $SIB_DIR" >&2
     else
         echo "Reinitialized existing Sib store in $SIB_DIR" >&2
