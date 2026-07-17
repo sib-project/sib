@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+. lib.bash
+
+usage() {
+    cat <<EOF
+usage: ${NAME} [-h] <name> [<chain-ish>]
+       ${NAME} -d <name>
+
+Save <chain-ish> as <name> (default: HEAD)
+
+  -d    Delete <name>
+  -h    Show this help
+EOF
+}
+
+delete=
+while getopts hd o; do
+    case "$o" in
+        h) usage; exit 0 ;;
+        d) delete=1 ;;
+        *) usage >&2; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [[ -n $delete ]]; then
+    [[ $# -eq 1 ]] || {
+        usage >&2
+        exit 1
+    }
+else
+    [[ $# -ge 1 && $# -le 2 ]] || {
+        usage >&2
+        exit 1
+    }
+fi
+
+name="$1"
+ref="refs/conv/$name"
+
+sib git check-ref-format "$ref" || die "invalid name: $name"
+
+if [[ -n $delete ]]; then
+    sib update-ref --no-deref -d -m "save: delete $name" "$ref"
+    exit
+fi
+
+#
+# now save
+#
+target="${2:-HEAD}"
+chain=$(sib rev-parse "$target" 2>/dev/null) || die "invalid chain: $target"
+sib update-ref -m "save: $name" --no-deref "$ref" "$chain"
+
+chain=$(sib git rev-parse --short $chain)
+echo "Saved $chain to $name" >&2
