@@ -44,18 +44,23 @@ echo "chain $chain"
 
 CONTENT=content
 
+lst="$(sib ls-trace $chain)"
+[[ -z $lst ]] && { echo --- Empty trace --- >&2; echo; exit 0; }
+
 # Traverse all key except $CONTENT
-sib ls-trace $chain | awk -v k="$CONTENT" '$1 != k { print }' \
+echo "$lst" \
+    | awk -v k="$CONTENT" '$1 != k { print }' \
     | while IFS=$' ' read -r key value; do
 
-    # Capitalize first letter
-    key=$(printf '%s' "${key^}:")
+    # Should not die here
+    [[ -z $value ]] && die "mallformed ls-tree format $lst"
+
     value=$(sib git cat-file blob $value)
-    echo "$key $value"
+    echo "${key^}: $value"
 done
 
-printf '\n'
-sib ls-trace $chain | awk -v k="$CONTENT" '$1 == k { print $2 }' \
-    | xargs sib git cat-file blob \
-    | truncate_content | render
-printf '\n'
+echo
+content=$(echo "$lst" | awk -v k="$CONTENT" '$1 == k { print $2 }')
+[[ -z $content ]] && { echo No $CONTENT field on $chain >&2; exit 0; }
+sib git cat-file blob $content | truncate_content | render
+echo
