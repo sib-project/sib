@@ -3,23 +3,25 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-k <KEY>] [-n <LINES>] [<chain-ish>]
-  -n LINES    Truncate content to LINES
-  -k KEY      Only show KEY's value on chain
-  -h, --help  Show this help
+usage: ${NAME} [-ch] [-k <key>] [-n <lines>] [<chain-ish>]
+  -n <lines>  Truncate content to <lines>
+  -k <key>    Only show <key>'s value on <chain-ish>
+  -c          Same as \`-k content'
+  -h          Show this help
 EOF
 }
 
 n_lines= key=
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -h|--help) usage; exit 0 ;;
-        -n)        n_lines="${2:?$1 requires arg}"; shift 2 ;;
-        -k)        key="${2:?$1 requires arg}"; shift 2 ;;
-        -*)        echo "unknown arg: $1" >&2; usage; exit 1 ;;
-        *)         break ;;
+while getopts hn:k:c o; do
+    case $o in
+        h) usage; exit 0 ;;
+        n) n_lines="$OPTARG" ;;
+        k) key="$OPTARG" ;;
+        c) key=content   ;;
+        *) usage; exit 1 ;;
     esac
 done
+shift $((OPTIND - 1))
 
 render() {
     cat | sed 's/^/    /' && true;
