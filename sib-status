@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+head_refs=()
+ancestor_refs=()
+
+head_ref=$(sib git symbolic-ref -q HEAD 2>/dev/null || :)
+head_hash=$(sib git rev-parse -q --verify HEAD 2>/dev/null || :)
+
+printf 'SIB_DIR:   %s\n' "$SIB_DIR"
+
+if [[ -z $head_hash ]]; then
+    printf 'HEAD:      (unborn)\n'
+    exit
+fi
+
+head_short=$(sib git rev-parse --short "$head_hash")
+
+# refs/conv/* pointing current HEAD
+mapfile -t head_refs < <(
+    sib git for-each-ref \
+         --format='%(refname:strip=2)' \
+         --points-at="$head_hash" \
+         refs/conv/
+)
+
+if [[ -n $head_ref ]]; then
+    printf 'HEAD:      %s -> %s' "$head_ref" "$head_short"
+else
+    printf 'HEAD:      %s' "$head_short"
+fi
+
+if ((${#head_refs[@]})); then
+    printf ' ('
+
+    separator=
+    for ref in "${head_refs[@]}"; do
+        printf '%s%s' "$separator" "$ref"
+        separator=', '
+    done
+    printf ')'
+fi
+
+[[ -n $head_ref ]] || printf ' [detached]'
+printf '\n'
+
+# Refs on ancestor chain
+while read -r object ref; do
+    [[ $object == "$head_hash" ]] && continue
+    ancestor_refs+=("$ref")
+done < <(
+    sib git for-each-ref \
+         --format='%(objectname) %(refname)' \
+         --merged="$head_hash" \
+         refs/conv/
+)
+
+((${#ancestor_refs[@]})) || exit
+
+printf '\nchain (HEAD -> root):\n'
+if parent=$(sib git rev-parse -q --verify "$head_hash" 2>/dev/null); then
+    sib git --no-pager log \
+         --graph \
+         --color=never \
+         --decorate=full \
+         --decorate-refs=HEAD \
+         --decorate-refs='refs/conv/*' \
+         --simplify-by-decoration \
+         --format='%h %d' \
+         "$parent"
+fi
