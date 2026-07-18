@@ -75,8 +75,7 @@ main() {
 
     [[ -n $only_chain ]] && exit 0
 
-    [[ -n $only_chain ]] && exit 0
-
+    # TODO: die there when plm-send rate limit or network error
     sib rev-jsonl HEAD \
         | plm-wrap -f plm -t request \
         | plm-send \
