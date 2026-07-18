@@ -1,6 +1,4 @@
 PREFIX := /usr/local
-SUFFIX := libexec/sib-core
-COREPREFIX = ${DESTDIR}${PREFIX}/${SUFFIX}
 
 SIB = sib $(wildcard sib-*) lib.bash
 PLM = $(wildcard plm/*)
@@ -8,11 +6,11 @@ PLM = $(wildcard plm/*)
 .PHONY: install uninstall
 
 install: uninstall
-	mkdir -p ${COREPREFIX}/plm
-	cp -R ${SIB} ${PLM} VERSION ${COREPREFIX}
-	ln -sf  ../${SUFFIX}/sib ${DESTDIR}${PREFIX}/bin/sib
+	mkdir -p ${DESTDIR}${PREFIX}/libexec/sib-core
+	cp -R ${SIB} ${PLM} VERSION ${DESTDIR}${PREFIX}/libexec/sib-core
+	ln -sf  ../libexec/sib-core/sib ${DESTDIR}${PREFIX}/bin/sib
 	chmod 755 ${DESTDIR}${PREFIX}/bin/sib
 
 uninstall:
-	rm -rf -- ${COREPREFIX}
+	rm -rf -- ${DESTDIR}${PREFIX}/libexec/sib-core
 	rm -f -- ${DESTDIR}${PREFIX}/bin/sib
