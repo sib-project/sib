@@ -3,29 +3,32 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-f] [-h] <chain-ish>
+usage: ${NAME} [-s <refname>] [-h] <chain-ish>
+       ${NAME} [-s <refname>] [-f] <ref>
 
-Move HEAD to <chain-ish>.
-
-By default, HEAD is detached at the resolved chain. With -f,
-<chain-ish> must be a ref and HEAD follows that ref.
+Move HEAD to <chain-ish>. By default, HEAD is detached at the resolved
+chain
+  -s  save HEAD to <refname> before switch
+  -f  HEAD follows <ref> after switch
+  -h  print this help
 EOF
 }
 
-symbolic=
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -h)  usage; exit 0 ;;
-        -f)  symbolic=true; shift ;;
-        --)  shift; break ;;
-        -*)  echo "unknown option: $1" >&2; usage; exit 1 ;;
-        *)   break ;;
+symbolic= refname=
+while getopts hfs: o; do
+    case $o in
+        h) usage; exit 0 ;;
+        f) symbolic=true ;;
+        s) refname="$OPTARG" ;;
+        *) usage; exit 1 ;;
     esac
 done
+shift $((OPTIND - 1))
 
 [[ $# -eq 1 ]] || { usage >&2; exit 1; }
 chain="$1"
+
+[[ -n $refname ]] && sib save "$refname"
 
 is_ref() {
     sib show-ref "$1" >/dev/null 2>&1
