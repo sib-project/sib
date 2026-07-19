@@ -4,36 +4,33 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-n] [-r] [-c] [--no-auth] [--no-stream] [-p <chain-ish>] [-s <name>] [-e ENDPOINT] [-m MODEL]
-  -e, --endpoint     API endpoint (default \$PLM_ENDPOINT)
-  -m, --model        Model name   (default \$PLM_MODEL)
-  -p, --parent       Parent chain-ish to chain on (default HEAD)
-  -s, --save         Save the current HEAD as <name> before asking
-  -n, --new          Start new converastion
-  -r, --resend       Do not accept or chain input (use with -p)
-  -c, --only-chain   Chain user turn only, no API call done
-      --no-stream    Disable streaming (PLM_USE_STREAM=false)
-      --no-auth      Do not require API key (PLM_API_KEY_REQUIRED=0)
-  -h, --help         Show this help
+usage: ${NAME} [-nrch] [-p <chain-ish>] [-s <name>] [-e <endpoint>] [-m <model>]
+  -e     API <endpoint> (PLM_ENDPOINT)
+  -m     Model name (PLM_MODEL)
+  -p     Parent <chain-ish> to chain on (default HEAD)
+  -s     Save the current HEAD as <name> before asking
+  -n     Start new conversation
+  -r     Do not accept or chain input (use with -p)
+  -c     Chain user turn only, no API call done
+  -h     Show this help
 EOF
 }
 
 parent=HEAD parent_arg= resend= ref= only_chain=
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -h|--help)        usage; exit 0 ;;
-        -e|--endpoint)    export PLM_ENDPOINT="${2:?$1 requires arg}"; shift 2 ;;
-        -m|--model)       export PLM_MODEL="${2:?$1 requires arg}"; shift 2 ;;
-        -p|--parent)      parent="${2:?$1 requires arg}"; shift 2 ;;
-        -s|--save)        ref="${2:?$1 requires arg}"; shift 2 ;;
-        -n|--new)         parent=; shift ;;
-        -r|--resend)      resend=1; shift ;;
-        -c|--only-chain)  only_chain=1; shift ;;
-        --no-stream)      export PLM_USE_STREAM='false'; shift ;;
-        --no-auth)        export PLM_API_KEY_REQUIRED=0; shift ;;
-        -*|*)             echo "unknown arg: $1" >&2; usage; exit 1 ;;
+while getopts he:m:p:s:nrc o; do
+    case $o in
+        h) usage; exit 0 ;;
+        e) export PLM_ENDPOINT="$OPTARG" ;;
+        m) export PLM_MODEL="$OPTARG" ;;
+        p) parent="$OPTARG" ;;
+        s) ref="$OPTARG" ;;
+        n) parent= ;;
+        r) resend=1 ;;
+        c) only_chain=1 ;;
+        *) usage; exit 1 ;;
     esac
 done
+shift $((OPTIND - 1))
 
 [[ -n $resend && -z $parent ]] && die "--new --resend doesn't make sense"
 
