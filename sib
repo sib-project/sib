@@ -201,7 +201,16 @@ cmd_rev_jsonl() {
 
 cmd_rev_parse() {
     [ $# -eq 1 ] || die 'usage: rev-parse <chain-ish>'
-    lgit rev-parse --verify "$1^{commit}"
+
+    # Refuse to read refs/conv/HEAD over HEAD.
+    # To read it, use rev-parse conv/HEAD
+    if [[ $1 != "HEAD" ]] &&
+           lgit rev-parse --quiet --verify --end-of-options \
+                "refs/conv/$1^{commit}" 2>/dev/null; then
+        return 0
+    fi
+
+    lgit rev-parse --verify --end-of-options "$1^{commit}"
 }
 
 #
