@@ -3,11 +3,11 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-s] [-h] <chain-ish>
+usage: ${NAME} [-f] [-h] <chain-ish>
 
 Move HEAD to <chain-ish>.
 
-By default, HEAD is detached at the resolved chain. With -s,
+By default, HEAD is detached at the resolved chain. With -f,
 <chain-ish> must be a ref and HEAD follows that ref.
 EOF
 }
@@ -17,7 +17,7 @@ symbolic=
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h)  usage; exit 0 ;;
-        -s)  symbolic=true; shift ;;
+        -f)  symbolic=true; shift ;;
         --)  shift; break ;;
         -*)  echo "unknown option: $1" >&2; usage; exit 1 ;;
         *)   break ;;
@@ -32,7 +32,7 @@ is_ref() {
 }
 
 if [[ -n $symbolic ]]; then
-    is_ref "$chain" || die "-s set but $chain is not ref"
+    is_ref "$chain" || die "-f set but $chain is not ref"
     sib symbolic-ref -m "switch to symbolic $chain" HEAD "$chain"
 else
     res=$(sib rev-parse "$chain" 2>/dev/null) || die "$chain is invalid"
