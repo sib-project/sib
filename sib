@@ -57,7 +57,12 @@ cmd_chain_trace() {
         die "Usage: chain-trace [-p <chain>] <trace>"
     fi
 
-    cmd_ls_trace $trace >/dev/null # check if itself is valid
+    # check if trace is valid
+    cmd_ls_trace $trace >/dev/null || die trace $trace is invalid
+
+    readonly commit_date='999999999 +0000'
+    GIT_AUTHOR_DATE="$commit_date" \
+    GIT_COMMITTER_DATE="$commit_date" \
     lgit commit-tree $parent $trace </dev/null
 }
 
