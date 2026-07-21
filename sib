@@ -25,6 +25,8 @@ lgit() {
 }
 
 cmd_init() {
+    [[ $# -ne 1 ]] || die 'no argument is allowed'
+
     local reinit=
     [[ -f "$SIB_DIR/HEAD" ]] && reinit=true
 
