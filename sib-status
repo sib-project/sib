@@ -6,10 +6,13 @@ ancestor_refs=()
 head_ref=$(sib git symbolic-ref -q HEAD 2>/dev/null || :)
 head_hash=$(sib git rev-parse -q --verify HEAD 2>/dev/null || :)
 
-printf 'SIB_DIR:   %s\n' "$SIB_DIR"
+printf 'SIB_DIR:      %s\n' "$SIB_DIR"
+printf 'PLM_MODEL:    %s\n' "$PLM_MODEL"
+printf 'PLM_ENDPOINT: %s\n' "$PLM_ENDPOINT"
 
+printf '\n'
 if [[ -z $head_hash ]]; then
-    printf 'HEAD:      (unborn)\n'
+    printf 'HEAD: (unborn)\n'
     exit
 fi
 
@@ -24,9 +27,9 @@ mapfile -t head_refs < <(
 )
 
 if [[ -n $head_ref ]]; then
-    printf 'HEAD:      %s -> %s' "$head_ref" "$head_short"
+    printf 'HEAD: %s -> %s' "$head_ref" "$head_short"
 else
-    printf 'HEAD:      %s' "$head_short"
+    printf 'HEAD: %s' "$head_short"
 fi
 
 if ((${#head_refs[@]})); then

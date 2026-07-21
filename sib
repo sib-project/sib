@@ -7,6 +7,9 @@ export SIB_DIR
 TRACE_MAGIC=_SIBTRACE
 TRACE_VERSION=v1
 
+readonly DEFAULT_PLM_MODEL=gpt-5.6-luna
+readonly DEFAULT_PLM_ENDPOINT=https://api.openai.com/v1/responses
+
 die() {
     [ $# -eq 0 ] || echo fatal: "$@" >&2
     exit 1
@@ -29,6 +32,8 @@ cmd_init() {
 
     if [[ -z $reinit ]]; then
         echo 'ref: refs/conv/scratch' > "$SIB_DIR/HEAD"
+        sib config set sib.model $DEFAULT_PLM_MODEL
+        sib config set sib.endpoint $DEFAULT_PLM_ENDPOINT
         echo "Initialized empty Sib store in $SIB_DIR" >&2
     else
         echo "Reinitialized existing Sib store in $SIB_DIR" >&2
@@ -244,6 +249,10 @@ cmd_symbolic_ref() {
 # dispatcher
 #
 
+cmd_config() {
+    lgit config $@
+}
+
 [[ $# -lt 1 ]] && { echo "usage: sib <command> [args]" >&2; exit 1; }
 
 cmd="$1"; shift
@@ -258,6 +267,15 @@ fi
 script_dir="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
 
 export PATH="$script_dir:$PATH"
+
+# Priority: Env > config > Default
+: "${PLM_MODEL:=$(cmd_config get sib.model 2>/dev/null)}"
+: "${PLM_MODEL:=$DEFAULT_PLM_MODEL}"
+
+: "${PLM_ENDPOINT:=$(cmd_config get sib.endpoint 2>/dev/null)}"
+: "${PLM_ENDPOINT:=$DEFAULT_PLM_ENDPOINT}"
+
+export PLM_MODEL PLM_ENDPOINT
 
 fn="cmd_${cmd//-/_}"
 if declare -F "$fn" > /dev/null; then
