@@ -32,50 +32,51 @@ while getopts he:m:p:s:nrc o; do
 done
 shift $((OPTIND - 1))
 
-[[ -n $resend && -z $parent ]] && die "--new --resend doesn't make sense"
-
 [[ -n $ref ]] && sib save -- "$ref"
 
 readonly unborn=refs/sib/unborn
 
-# --new should not taint existing save (or other refs)
-[[ -z $parent ]] && sib symbolic-ref HEAD $unborn
+if [[ -z $parent ]]; then
+    # -n should not taint existing save (or other refs)
+    sib symbolic-ref HEAD $unborn
+else
+    parent=$(sib rev-parse "$parent") || die bad parent: $parent
+fi
 
-# --new sets parent= to make chain-trace-json create a new root
-# chain. If no arguments are passed to rev-parse, nothing is
-# printed. Therefore, $parent become empty here as well.
-parent="$(sib rev-parse $parent 2>/dev/null || true)"
+if [[ -z $resend ]]; then
+    [[ -t 0 ]] && echo '(stdin, Ctrl+D to send)' >&2
 
-# rev-parse prints empty means there is no ref pointed to by
-# $parent. In this case, start a new chain and update HEAD.
-parent_arg="${parent:+-p $parent}"
+    # rev-parse prints empty means there is no ref pointed to by
+    # $parent. In this case, start a new chain and update HEAD.
+    parent_arg="${parent:+-p $parent}"
+    parent=$(plm-wrap -f text -t plm | sib chain-trace-json $parent_arg)
+fi
+
+[[ -n $parent ]] || die 'refuse to do worthless job with -nr or -nc'
+
+reflog=$(sib show -c $parent | tr -s '[:space:]' ' ' | cut -c1-72)
+
+[[ -n $only_chain ]] && {
+    sib update-ref -m "ask (user): ${reflog:-$parent}" HEAD $parent
+    exit 0
+}
 
 {
-    if [[ -z $resend ]]; then
-        [[ -t 0 ]] && echo '(stdin, Ctrl+D to send)' >&2
+    new=$(sib rev-jsonl $parent \
+              | plm-wrap -f plm -t request \
+              | plm-send \
+              | plm-wrap -f response -t plm -r assistant \
+              | sib chain-trace-json -p $parent) \
+        || die rate limit or network error
+} 3>&1
 
-        plm-wrap -f text -t plm | sib chain-trace-json $parent_arg
-    elif [[ -n $parent ]]; then
-        echo $parent
-    fi
-} | xargs -r sib update-ref -m 'ask: chain user turn' HEAD
+sib update-ref -m "ask: ${reflog:-$new}" HEAD $new
 
+# FIXME: remove this boilerplate
 # A fresh store or --new initially uses an internal symbolic ref.
 # Once the first turn exists, replace it with a direct HEAD and remove
 # the bootstrap ref.
 if [[ $(sib symbolic-ref -q HEAD 2>/dev/null || true) == "$unborn" ]]; then
-    sib switch HEAD
+    sib update-ref -m 'ask: detatch HEAD from unborn ref' --no-deref HEAD HEAD
     sib update-ref --no-deref -d "$unborn"
 fi
-
-[[ -n $only_chain ]] && exit 0
-
-# TODO: die there when plm-send rate limit or network error
-{
-    sib rev-jsonl HEAD \
-        | plm-wrap -f plm -t request \
-        | plm-send \
-        | plm-wrap -f response -t plm -r assistant \
-        | sib chain-trace-json -p HEAD \
-        | xargs sib update-ref -m 'ask: chain agent turn' HEAD
-} 3>&1
