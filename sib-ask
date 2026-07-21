@@ -34,14 +34,18 @@ shift $((OPTIND - 1))
 
 [[ -n $ref ]] && sib save -- "$ref"
 
-# HEAD is unborn, should detach it when update-ref
-sib rev-parse HEAD &>/dev/null || noderef=--no-deref
+# An unborn HEAD has no parent. The first update should detach HEAD
+sib rev-parse HEAD &>/dev/null || {
+    noderef=--no-deref
+    [[ $parent == HEAD ]] && parent=
+}
 
 if [[ -z $parent ]]; then
     # -n is set, should detach HEAD to not taint existing ref
     noderef=--no-deref
 else
-    parent=$(sib rev-parse "$parent") || die bad parent: $parent
+    tmp=$(sib rev-parse "$parent") || die bad parent: $parent
+    parent=$tmp
 fi
 
 if [[ -z $resend ]]; then
