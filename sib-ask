@@ -16,7 +16,7 @@ usage: ${NAME} [-nrch] [-p <chain-ish>] [-s <name>] [-e <endpoint>] [-m <model>]
 EOF
 }
 
-parent=HEAD parent_arg= resend= ref= only_chain=
+parent=HEAD parent_arg= resend= ref= only_chain= noderef=
 while getopts he:m:p:s:nrc o; do
     case $o in
         h) usage; exit 0 ;;
@@ -34,11 +34,12 @@ shift $((OPTIND - 1))
 
 [[ -n $ref ]] && sib save -- "$ref"
 
-readonly unborn=refs/sib/unborn
+# HEAD is unborn, should detach it when update-ref
+sib rev-parse -q --verify HEAD &>/dev/null || noderef=--no-deref
 
 if [[ -z $parent ]]; then
-    # -n should not taint existing save (or other refs)
-    sib symbolic-ref HEAD $unborn
+    # -n is set, should detach HEAD to not taint existing ref
+    noderef=--no-deref
 else
     parent=$(sib rev-parse "$parent") || die bad parent: $parent
 fi
@@ -57,8 +58,8 @@ fi
 reflog=$(sib show -c $parent | tr -s '[:space:]' ' ' | cut -c1-72)
 
 [[ -n $only_chain ]] && {
-    sib update-ref -m "ask (user): ${reflog:-$parent}" HEAD $parent
-    exit 0
+    sib update-ref -m "ask (user): ${reflog:-$parent}" $noderef HEAD $parent
+    exit
 }
 
 {
@@ -70,13 +71,4 @@ reflog=$(sib show -c $parent | tr -s '[:space:]' ' ' | cut -c1-72)
         || die rate limit or network error
 } 3>&1
 
-sib update-ref -m "ask: ${reflog:-$new}" HEAD $new
-
-# FIXME: remove this boilerplate
-# A fresh store or --new initially uses an internal symbolic ref.
-# Once the first turn exists, replace it with a direct HEAD and remove
-# the bootstrap ref.
-if [[ $(sib symbolic-ref -q HEAD 2>/dev/null || true) == "$unborn" ]]; then
-    sib update-ref -m 'ask: detatch HEAD from unborn ref' --no-deref HEAD HEAD
-    sib update-ref --no-deref -d "$unborn"
-fi
+sib update-ref -m "ask: ${reflog:-$new}" $noderef HEAD $new
