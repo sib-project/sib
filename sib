@@ -9,6 +9,7 @@ TRACE_VERSION=v1
 
 readonly DEFAULT_PLM_MODEL=gpt-5.6-luna
 readonly DEFAULT_PLM_ENDPOINT=https://api.openai.com/v1/responses
+readonly COMMIT_DATE='999999999 +0000'
 
 die() {
     [ $# -eq 0 ] || echo fatal: "$@" >&2
@@ -65,9 +66,8 @@ cmd_chain_trace() {
     # check if trace is valid
     cmd_ls_trace $trace >/dev/null || die trace $trace is invalid
 
-    readonly commit_date='999999999 +0000'
-    GIT_AUTHOR_DATE="$commit_date" \
-    GIT_COMMITTER_DATE="$commit_date" \
+    GIT_AUTHOR_DATE="$COMMIT_DATE" \
+    GIT_COMMITTER_DATE="$COMMIT_DATE" \
     lgit commit-tree $parent $trace </dev/null
 }
 
