@@ -5,9 +5,8 @@
 : "${SIB_DIR:=${XDG_STATE_HOME:-$HOME/.local/state}/sib}"
 export SIB_DIR
 
-TRACE_MAGIC=_SIBTRACE
-TRACE_VERSION=v1
-
+readonly TRACE_MAGIC=_SIBTRACE
+readonly TRACE_VERSION=v1
 readonly DEFAULT_PLM_MODEL=gpt-5.6-luna
 readonly DEFAULT_PLM_ENDPOINT=https://api.openai.com/v1/responses
 readonly COMMIT_DATE='999999999 +0000'
@@ -69,6 +68,7 @@ cmd_chain_trace() {
 }
 
 cmd_mktrace() {
+    [[ $# -ne 1 ]] || die 'no argument is allowed'
     local lines=$(cat) line key hash
 
     if [[ -n $lines ]]; then
@@ -96,12 +96,16 @@ cmd_mktrace() {
 }
 
 cmd_ls_trace() {
-    [ -n "$1" ] || die 'usage: ls-trace <trace>'
+    [[ $# -ne 2 ]] || die 'usage: ls-trace <trace>'
 
     local tmp=$(lgit ls-tree $1 | awk 'NF==4 { print $4, $3 }')
     local keys=$(echo "$tmp" | tf_key) || die 'invalid trace format'
 
-    grep -qxF $TRACE_MAGIC <<<"$keys" || die 'magic not found on trace'
+    magic=$(awk -v k=$TRACE_MAGIC '$1 == k { print $2 }' <<<"$tmp") ||
+        die No magic found on trace
+
+    [[ $(lgit cat-file blob $magic) != $TRACE_VERSION ]] &&
+         die "invalid trace version: $version"
 
     printf '%s\n' "$keys" | sort | uniq -d | grep -q . &&
             die 'duplicate key found in input'
@@ -142,12 +146,14 @@ tf_json() {
 }
 
 cmd_mktrace_json() {
+    [[ $# -ne 1 ]] || die 'no argument is allowed'
     tf_json | cmd_mktrace
 }
 
 # print single trace object to one-line json (jsonl)
 cmd_ls_trace_json() {
-    [ -n "$1" ] || die 'usage: ls-trace-json <trace>'
+    [[ $# -ne 2 ]] || die 'usage: ls-trace-json <trace>'
+
     local entries
     entries=$(cmd_ls_trace "$1") || exit 1
     [ -n "$entries" ] || { echo '{}'; return 0; }
@@ -162,6 +168,8 @@ cmd_chain_trace_json() {
 }
 
 cmd_chain_jsonl() {
+    [[ $# -ne 1 ]] || die 'no argument is allowed'
+
     local line trace chain parent= n=0
     while IFS= read -r line || [ -n "$line" ]; do
         [ -n "$line" ] || continue          # skip blank lines
@@ -181,7 +189,8 @@ cmd_chain_jsonl() {
 }
 
 cmd_ls_chain() {
-    [ -n "$1" ] || die 'usage: ls-chain <chain-ish>'
+    [[ $# -ne 2 ]] || die 'usage: ls-chain <chain-ish>'
+
     lgit cat-file commit "$1" | awk '
         /^$/ { exit }                          # stop at blank line (msg starts)
         $1 == "tree"   { print "trace " $2 }
@@ -202,7 +211,8 @@ cmd_rev_list() {
 }
 
 cmd_rev_jsonl() {
-    [ -n "$1" ] || die 'usage: rev-jsonl <chain-ish>'
+    [[ $# -ne 2 ]] || die 'usage: rev-jsonl <chain-ish>'
+
     local commits
     commits=$(cmd_rev_list "$1") || die "rev-list failed for $1"
     while read -r commit; do
@@ -253,7 +263,7 @@ cmd_symbolic_ref() {
 #
 
 cmd_config() {
-    lgit config $@
+    lgit config "$@"
 }
 
 [[ $# -lt 1 ]] && { echo "usage: sib <command> [args]" >&2; exit 1; }
