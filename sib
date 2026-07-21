@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+. lib.bash
 
 : "${SIB_DIR:=${XDG_STATE_HOME:-$HOME/.local/state}/sib}"
 export SIB_DIR
@@ -10,11 +11,6 @@ TRACE_VERSION=v1
 readonly DEFAULT_PLM_MODEL=gpt-5.6-luna
 readonly DEFAULT_PLM_ENDPOINT=https://api.openai.com/v1/responses
 readonly COMMIT_DATE='999999999 +0000'
-
-die() {
-    [ $# -eq 0 ] || echo fatal: "$@" >&2
-    exit 1
-}
 
 lgit() {
     env GIT_AUTHOR_NAME='Sibyl' \
@@ -52,14 +48,13 @@ hf_blob() {
 
 # chain-trace [-p <chain>] <trace>
 cmd_chain_trace() {
-    local parent=
-    local trace=
+    local parent_args=() trace=
 
     if [[ $# -eq 1 ]]; then
         trace="$1"
     elif [[ $# -eq 3 && "$1" == "-p" ]]; then
         cmd_ls_trace $2 >/dev/null # check if parent is valid
-        parent="-p $2"
+        parent_args=(-p "$2")
         trace="$3"
     else
         die "Usage: chain-trace [-p <chain>] <trace>"
@@ -70,37 +65,46 @@ cmd_chain_trace() {
 
     GIT_AUTHOR_DATE="$COMMIT_DATE" \
     GIT_COMMITTER_DATE="$COMMIT_DATE" \
-    lgit commit-tree $parent $trace </dev/null
-}
-
-tf_key() {
-    cut -d' ' -f1
-}
-
-tf_is_dup() {
-    tf_key | sort | uniq -d | grep -q .
+    lgit commit-tree "${parent_args[@]}" $trace </dev/null
 }
 
 cmd_mktrace() {
-    local lines=$(cat)
+    local lines=$(cat) line key hash
 
-    echo "$lines" | tf_is_dup && die 'duplicate key found in input'
+    if [[ -n $lines ]]; then
+        keys=$(printf '%s\n' "$lines" | tf_key) || die 'invalid trace format'
+
+        printf '%s\n' "$keys" | sort | uniq -d | grep -q . &&
+            die 'duplicate key found in input'
+
+        while IFS= read -r key; do
+            case "$key" in
+                "$TRACE_MAGIC"*) die "reserved key prefix: $key" ;;
+            esac
+        done <<<"$keys"
+    fi
 
     {
         echo -n $TRACE_VERSION | hf_blob $TRACE_MAGIC;
-        [ -n "$lines" ] && echo "$lines" | while read key hash; do
-                printf "100644 blob %s\t%s\n" "$hash" "$key"
-            done
-    } | lgit mktree
+
+        if [[ -n $lines ]]; then
+            while read -r key hash; do
+                printf '100644 blob %s\t%s\n' "$hash" "$key"
+            done <<<"$lines"
+        fi
+    } | lgit mktree || die Invalid mktrace format
 }
 
 cmd_ls_trace() {
     [ -n "$1" ] || die 'usage: ls-trace <trace>'
 
     local tmp=$(lgit ls-tree $1 | awk 'NF==4 { print $4, $3 }')
+    local keys=$(echo "$tmp" | tf_key) || die 'invalid trace format'
 
-    echo "$tmp" | tf_key | grep -qxF $TRACE_MAGIC || die 'magic not found on trace'
-    echo "$tmp" | tf_is_dup && die 'duplicate key found on trace'
+    grep -qxF $TRACE_MAGIC <<<"$keys" || die 'magic not found on trace'
+
+    printf '%s\n' "$keys" | sort | uniq -d | grep -q . &&
+            die 'duplicate key found in input'
 
     # Here, every key starting with $TRACE_MAGIC will be considered as
     # non-key and internal indicator.
@@ -111,11 +115,14 @@ cmd_git() {
     lgit "$@"
 }
 
-
 # hash and format blob (to trace format)
 # $1: blob name
 tf_blob() {
-    hf_blob "$1" | awk '{ print $4, $3 }'
+    local key=$1 hash
+
+    [[ -n $key ]] || return 1
+    hash=$(lgit hash-object -w --stdin) || return
+    printf '%s %s\n' "$key" "$hash"
 }
 
 # json -> ls_trace format
@@ -126,17 +133,11 @@ tf_json() {
     json="$(cat)"
 
     # Reject null/array/object/non-object
-    [ "$(echo "$json" | jq -r 'type')" = "object" ] \
-        || die 'input must be a JSON object'
+    jq -e 'type == "object" and all(.[]; type == "string")' >/dev/null <<<"$json" \
+        || die 'input must be a JSON object containing only string values'
 
     echo "$json" | jq -r 'keys_unsorted[]' | while IFS= read -r key; do
-        case "$key" in
-            "$TRACE_MAGIC"*) die "reserved key prefix: $key" ;;
-            '') die 'empty key' ;;
-        esac
-
-        # Extract value to raw.
-        echo "$json" | jq -j --arg k "$key" '.[$k]' | tf_blob "$key"
+        jq -j --arg k "$key" '.[$k]' <<<"$json" | tf_blob "$key"
     done
 }
 
