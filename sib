@@ -239,7 +239,7 @@ cmd_show_ref() {
     lgit show-ref --verify --hash "$1"
 }
 
-cmd_list_refs() {
+cmd_ls_refs() {
     local prefix=${1:-refs/}
     lgit for-each-ref --format='%(refname) %(objectname)' "$prefix"
 }

@@ -35,7 +35,7 @@ shift $((OPTIND - 1))
 
 if [[ -n $list ]]; then
     # TODO: add pattern matching like git branch -l [<pattern>]
-    sib list-refs refs/conv/ | awk '{ sub(/^refs\/conv\//, "", $1); print $1 }'
+    sib ls-refs refs/conv/ | awk '{ sub(/^refs\/conv\//, "", $1); print $1 }'
     exit
 fi
 
