@@ -1,12 +1,24 @@
 * TODO Commit incomplete output to the chain when interrupted during streaming in plm-send
 * DONE Create sib-show and print logs using show
 ** DONE Add sib-show -k <key> [<chain-ish>]
+
 * DONE Add sib-ask -t <ref>; update-ref current HEAD and then send turn
 * DONE Add sib-edit <chain-ish>; edit turn (rebase HEAD onto edited <chain-ish>)
 ** TODO devise simpler interface
+** TODO Implement sib reorder
+cat <<EOF
+04b7f879
+<ref1>
+<ref2>
+<trace_hash>
+<chain_hash>
+<ref3..ref5>
+EOF | sib reorder
+prints reorder'd chain hash
+
 * DONE Fix only refs/heads are created in the reflog
 * TODO Librarize awk '$1=="trace"{print $2}' patterns
-* TODO discard refs/conv/scratch and set default state to detatched
+* DONE discard refs/conv/scratch and set default state to detatched
 Currently, sib init and sib-ask use refs/conv/scratch by default, but
 sib-switch switches based on the detached HEAD state. Although sib-ask
 works even in the detached state, it will confuse users. Ideally, it
