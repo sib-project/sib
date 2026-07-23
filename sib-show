@@ -36,7 +36,7 @@ chain=$(sib rev-parse $target)
 
 if [[ ! -z $key ]]; then
     sib ls-trace $chain \
-        | awk -v k=$key '$1 == k { print $2 }' \
+        | awk -F'\t' -v k=$key '$2 == k { print $1 }' \
         | xargs sib git cat-file blob
     exit 0
 fi
@@ -51,8 +51,8 @@ lst="$(sib ls-trace $chain)"
 
 # Traverse all key except $CONTENT
 echo "$lst" \
-    | awk -v k="$CONTENT" '$1 != k { print }' \
-    | while IFS=$' ' read -r key value; do
+    | awk -F'\t' -v k="$CONTENT" '$2 != k { print }' \
+    | while IFS=$'\t' read -r value key; do
 
     # Should not die here
     [[ -z $value ]] && die "mallformed ls-tree format $lst"
@@ -62,7 +62,7 @@ echo "$lst" \
 done
 
 echo
-content=$(echo "$lst" | awk -v k="$CONTENT" '$1 == k { print $2 }')
+content=$(echo "$lst" | awk -F'\t' -v k="$CONTENT" '$2 == k { print $1 }')
 [[ -z $content ]] && { echo No $CONTENT field on $chain >&2; exit 0; }
 sib git cat-file blob $content | truncate_content | render
 echo

@@ -706,8 +706,7 @@ raw_blob=$(
 )
 
 raw_trace=$(
-    printf 'content\t%s\n' "$raw_blob" |
-        sib mktrace
+    printf '%s\tcontent\n' "$raw_blob" | sib mktrace
 )
 
 assert_match "$raw_trace" '^[0-9a-f]{40,64}$' \
