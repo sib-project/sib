@@ -39,6 +39,12 @@ stream() {
                     response.completed)
                         jq '.response' <<< "$payload"
                         ;;
+                    *)
+                        if [[ -n "${PLM_DEBUG:-}" ]]; then
+                            echo "event: $current_event" >&3
+                            echo "data: $payload" >&3
+                        fi
+                        ;;
                 esac
             fi
         done
