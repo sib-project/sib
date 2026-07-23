@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o pipefail
+
 : "${SIB_DIR:=${XDG_STATE_HOME:-$HOME/.local/state}/sib}"
 export SIB_DIR
 
@@ -8,6 +10,11 @@ readonly TRACE_VERSION=v1
 readonly DEFAULT_PLM_MODEL=gpt-5.6-luna
 readonly DEFAULT_PLM_ENDPOINT=https://api.openai.com/v1/responses
 readonly COMMIT_DATE='999999999 +0000'
+
+die() {
+    [ $# -eq 0 ] || echo fatal: "$@" >&2
+    exit 1
+}
 
 lgit() {
     env GIT_AUTHOR_NAME='Sibyl' \
@@ -153,25 +160,21 @@ tf_blob() {
     printf '%s %s\n' "$key" "$hash"
 }
 
-# json -> ls_trace format
 # Input: {"key": "value", "key": "value", ...}
-# Hash every values
-tf_json() {
-    local json
-    json="$(cat)"
+cmd_mktrace_json() {
+    [[ $# -ne 1 ]] || die 'no argument is allowed'
+
+    local json="$(cat)"
 
     # Reject null/array/object/non-object
     jq -e 'type == "object" and all(.[]; type == "string")' >/dev/null <<<"$json" \
         || die 'input must be a JSON object containing only string values'
 
-    echo "$json" | jq -r 'keys_unsorted[]' | while IFS= read -r key; do
-        jq -j --arg k "$key" '.[$k]' <<<"$json" | tf_blob "$key"
-    done
-}
-
-cmd_mktrace_json() {
-    [[ $# -ne 1 ]] || die 'no argument is allowed'
-    tf_json | cmd_mktrace
+    tr=$(jq -r 'keys_unsorted[]' <<<"$json" | while IFS= read -r key; do
+             [[ -z $key ]] && die empty key detacted on JSON
+             jq -j --arg k "$key" '.[$k]' <<<"$json" | tf_blob "$key"
+         done) || die
+    cmd_mktrace <<<"$tr"
 }
 
 # print single trace object to one-line json (jsonl)
