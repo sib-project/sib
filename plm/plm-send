@@ -64,7 +64,7 @@ main () {
     local endpoint="${PLM_ENDPOINT:-https://api.openai.com/v1/responses}"
     local retry="${PLM_RETRY:-3}"
     local api_key_required="${PLM_API_KEY_REQUIRED:-1}"
-    local api_key="${PLM_API_KEY:-"$OPENAI_API_KEY"}"
+    local api_key="${PLM_API_KEY:-"${OPENAI_API_KEY:-}"}"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
