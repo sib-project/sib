@@ -4,11 +4,11 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-nrch] [-p <chain-ish>] [-s <name>] [-e <endpoint>] [-m <model>]
+usage: ${NAME} [-nrch] [-p <chain-ish>] [-t <name>] [-e <endpoint>] [-m <model>]
   -e     API <endpoint> (PLM_ENDPOINT)
   -m     Model name (PLM_MODEL)
   -p     Parent <chain-ish> to chain on (default HEAD)
-  -s     Save the current HEAD as <name> before asking
+  -t     Save the current HEAD as <name> before asking
   -n     Start new conversation
   -r     Do not accept or chain input (use with -p)
   -c     Chain user turn only, no API call done
@@ -17,13 +17,13 @@ EOF
 }
 
 parent=HEAD parent_arg= resend= ref= only_chain= noderef=
-while getopts he:m:p:s:nrc o; do
+while getopts he:m:p:t:nrc o; do
     case $o in
         h) usage; exit 0 ;;
         e) export PLM_ENDPOINT="$OPTARG" ;;
         m) export PLM_MODEL="$OPTARG" ;;
         p) parent="$OPTARG" ;;
-        s) ref="$OPTARG" ;;
+        t) ref="$OPTARG" ;;
         n) parent= ;;
         r) resend=1 ;;
         c) only_chain=1 ;;

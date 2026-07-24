@@ -3,23 +3,23 @@
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-s <refname>] [-h] <chain-ish>
-       ${NAME} [-s <refname>] [-f] <ref>
+usage: ${NAME} [-t <refname>] [-h] <chain-ish>
+       ${NAME} [-t <refname>] [-f] <ref>
 
 Move HEAD to <chain-ish>. By default, HEAD is detached at the resolved
 chain
-  -s  save HEAD to <refname> before switch
+  -t  save HEAD to <refname> before switch
   -f  HEAD follows <ref> after switch
   -h  print this help
 EOF
 }
 
 symbolic= refname=
-while getopts hfs: o; do
+while getopts hft: o; do
     case $o in
         h) usage; exit 0 ;;
         f) symbolic=true ;;
-        s) refname="$OPTARG" ;;
+        t) refname="$OPTARG" ;;
         *) usage; exit 1 ;;
     esac
 done
