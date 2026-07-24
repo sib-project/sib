@@ -23,10 +23,6 @@ while getopts hn:k:c o; do
 done
 shift $((OPTIND - 1))
 
-render() {
-    cat | sed 's/^/    /' && true;
-}
-
 truncate_content() {
     [[ -n $n_lines ]] && head -n "$n_lines" || cat
 }
@@ -64,5 +60,5 @@ done
 echo
 content=$(echo "$lst" | awk -F'\t' -v k="$CONTENT" '$2 == k { print $1 }')
 [[ -z $content ]] && { echo No $CONTENT field on $chain >&2; exit 0; }
-sib git cat-file blob $content | truncate_content | render
+sib git cat-file blob $content | truncate_content
 echo

@@ -26,4 +26,7 @@ show_args=()
 
 sib rev-list "$target" | while read -r chain; do
     sib-show "${show_args[@]}" "$chain"
+    echo
+    echo ---
+    echo
 done
