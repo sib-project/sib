@@ -127,24 +127,32 @@ cmd_mktrace() {
 }
 
 cmd_ls_trace() {
-    [[ $# -ne 2 ]] || die 'usage: ls-trace <trace>'
+    [[ $# -eq 1 ]] || die 'usage: ls-trace <trace>'
 
-    local tmp=$(lgit ls-tree $1 | awk 'NF==4 { OFS="\t"; print $3, $4 }')
-    local keys=$(echo "$tmp" | tf_key) || die 'invalid trace format'
+    local tmp keys magic version
 
-    magic=$(awk -F"\t" -v k=$TRACE_MAGIC '$2 == k { print $1 }' <<<"$tmp") ||
-        die No magic found on trace
+    tmp="$(lgit ls-tree "$1" 2>/dev/null)" || die "invalid object name $1"
+    tmp=$(awk 'NF==4 { OFS="\t"; print $3, $4 }' <<<"$tmp")
 
-    [[ $(lgit cat-file blob $magic) != $TRACE_VERSION ]] &&
-         die "invalid trace version: $version"
+    # Now $tmp is ls-trace format before screening
+
+    keys=$(tf_key <<<"$tmp") || die 'invalid trace format'
 
     printf '%s\n' "$keys" | sort | uniq -d | grep -q . &&
             die "duplicate key found in trace $1"
 
+    magic=$(awk -F"\t" -v k=$TRACE_MAGIC '$2 == k { print $1 }' <<<"$tmp")
+    [[ -z $magic ]] && die 'No magic found on trace'
+
+    # Here it is ensured $magic is valid hash from ls-tree and single
+    # line by upper dedup check
+    version=$(lgit cat-file blob $magic)
+    [[ $version != $TRACE_VERSION ]] && die "invalid trace version: $version"
+
     # Here, every key starting with $TRACE_MAGIC will be considered as
     # non-key and internal indicator. NF >= 2 is to not print \t for
     # empty input
-    awk -F"\t" -v k="$TRACE_MAGIC" -v OFS='\t' \
+    awk -F"\t" -v k=$TRACE_MAGIC -v OFS='\t' \
         'NF >= 2 && index($2, k) != 1 { print $1, $2 }' <<<"$tmp" ||
         true # return 0 for empty trace
 }
