@@ -2,7 +2,7 @@
 
 set -o pipefail
 
-: "${SIB_DIR:=${XDG_STATE_HOME:-$HOME/.local/state}/sib}"
+: "${SIB_DIR:=$HOME/.sib}"
 export SIB_DIR
 
 readonly TRACE_MAGIC=_SIBTRACE
