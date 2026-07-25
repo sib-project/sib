@@ -202,7 +202,11 @@ cmd_ls_trace_json() {
 }
 
 cmd_chain_trace_json() {
-    cmd_chain_trace "$@" "$(cmd_mktrace_json)"
+    local tmp
+
+    tmp="$(cmd_mktrace_json)" || die
+
+    cmd_chain_trace "$@" "$tmp"
 }
 
 cmd_chain_jsonl() {
