@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 . lib.bash
 
 usage() {
@@ -70,6 +72,8 @@ reflog=$(sib show -c $parent | tr -s '[:space:]' ' ' | cut -c1-72)
     res=$(sib rev-jsonl $parent \
               | plm-wrap -f plm -t request \
               | plm-send) || die 'fail to recieve API call'
+
+    [[ -z "${SIB_DEBUG:-}" ]] || echo "sib-ask: res: $res" >&2
 } 3>&1
 
 new=$(plm-wrap -f response -t plm -r assistant <<<"$res" | sib chain-trace-json -p $parent) ||

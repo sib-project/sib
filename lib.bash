@@ -1,5 +1,3 @@
-set -euo pipefail
-
 NAME="$(basename -- $0)"
 
 die() {

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 . lib.bash
 
 chain_ish="${1:-HEAD}"
