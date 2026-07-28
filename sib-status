@@ -19,7 +19,10 @@ fi
 head_short=$(sib git rev-parse --short "$head_hash")
 
 # refs/conv/* pointing current HEAD
-mapfile -t head_refs < <(
+head_refs=()
+while IFS= read -r line; do
+    head_refs+=("$line")
+done < <(
     sib git for-each-ref \
          --format='%(refname:strip=2)' \
          --points-at="$head_hash" \

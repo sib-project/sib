@@ -57,7 +57,7 @@ echo "$lst" \
     [[ -z $value ]] && die "mallformed ls-tree format $lst"
 
     value=$(sib git cat-file blob $value)
-    echo "${key^}: $value"
+    echo "$key: $value"
 done
 
 echo
