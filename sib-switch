@@ -41,7 +41,9 @@ is_ref() {
 if [[ -n $symbolic ]]; then
     is_ref "$chain" || die "-f set but $chain is not ref"
     sib symbolic-ref -m "switch to symbolic $chain" HEAD "$chain"
+    echo "HEAD now followes $chain" >&2
 else
     res=$(sib rev-parse "$chain" 2>/dev/null) || die "$chain is invalid"
+    echo "switch to $chain ($(sib git rev-parse --short $res)) from $(sib git rev-parse --short HEAD)" >&2
     sib update-ref -m "switch to $chain" --no-deref HEAD $res
 fi
