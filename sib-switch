@@ -6,8 +6,9 @@ set -euo pipefail
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-t <refname>] [-h] <chain-ish>
-       ${NAME} [-t <refname>] [-f] <ref>
+usage: ${NAME} [-t <refname>] <chain-ish>
+       ${NAME} [-t <refname>] -f <ref>
+       ${NAME} -h
 
 Move HEAD to <chain-ish>. By default, HEAD is detached at the resolved
 chain

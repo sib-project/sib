@@ -11,7 +11,6 @@ usage: ${NAME} [-h] <name> [<chain-ish>]
        ${NAME} -l
 
 Save <chain-ish> as <name> (default: HEAD)
-
   -d    Delete <name>
   -l    List saved names
   -h    Show this help
