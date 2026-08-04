@@ -321,6 +321,11 @@ fi
 # script_dir need to be realpath ../libexec/sib-core
 script_dir="$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")"
 
+
+cmd_version() {
+    echo sib version $(cat $script_dir/VERSION)
+}
+
 export PATH="$script_dir:$PATH"
 
 # Priority: Env > config > Default
