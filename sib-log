@@ -1,34 +1,34 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 . lib.bash
 
 usage() {
     cat <<EOF
-usage: ${NAME} [-n LINES] [<chain-ish>]
-  -n LINES    Truncate content to LINES (disables markdown rendering)
-  -h, --help  Show this help
+usage: ${NAME} [-n <lines>] [<chain-ish>]
+  -n Truncate content to LINES (disables markdown rendering)
+  -h Show this help
 EOF
 }
 
 n_lines=
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -h|--help) usage; exit 0 ;;
-        -n)        n_lines="${2:?$1 requires arg}"; shift 2 ;;
-        -*)        echo "unknown arg: $1" >&2; usage; exit 1 ;;
-        *)         break ;;
+        -h) usage; exit 0 ;;
+        -n) n_lines="${2:?$1 requires arg}"; shift 2 ;;
+        -*) echo "unknown arg: $1" >&2; usage; exit 1 ;;
+        *) break ;;
     esac
 done
 
-target=${1:-HEAD}
+[[ $# -le 1 ]] || { usage >&2; die; }
+target="${1:-HEAD}"
+tid=$(sib rev-parse "$target" 2>/dev/null) || die invalid chain-ish $target
 
 show_args=()
 [[ -n $n_lines ]] && show_args=(-n "$n_lines")
 
-sib rev-list "$target" | while read -r chain; do
-    sib-show "${show_args[@]}" "$chain"
+sib rev-list "$tid" | while read -r chain; do
+    sib-show "${show_args[@]}" $chain
     echo
     echo ---
     echo
