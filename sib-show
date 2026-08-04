@@ -15,7 +15,7 @@ EOF
 }
 
 n_lines= key=
-while getopts hn:k:c o; do
+while getopts rhn:k:c o; do
     case $o in
         h) usage; exit 0 ;;
         n) n_lines="$OPTARG" ;;
@@ -30,8 +30,14 @@ truncate_content() {
     [[ -n $n_lines ]] && head -n "$n_lines" || cat
 }
 
-target=${1:-HEAD}
-chain=$(sib rev-parse $target)
+target="${1:-HEAD}"
+
+# On sib-log
+if [[ -n "${SIB_SHOW_RESOLVED:-}" ]]; then
+    chain="$target"
+else
+    chain=$(sib rev-parse $target)
+fi
 
 if [[ ! -z $key ]]; then
     sib ls-trace $chain \

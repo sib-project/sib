@@ -28,7 +28,7 @@ show_args=()
 [[ -n $n_lines ]] && show_args=(-n "$n_lines")
 
 sib rev-list "$tid" | while read -r chain; do
-    sib-show "${show_args[@]}" $chain
+    SIB_SHOW_RESOLVED=1 sib-show "${show_args[@]}" $chain
     echo
     echo ---
     echo
