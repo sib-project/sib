@@ -59,7 +59,7 @@ if [[ -z $resend ]]; then
     parent=$(plm-wrap -f text -t plm | sib chain-trace-json $parent_arg)
 fi
 
-[[ -n $parent ]] || die 'refuse to do worthless job with -nr or -nc'
+[[ -n $parent ]] || die 'refuse to do worthless job with -nr'
 
 reflog=$(sib show -c $parent | tr -s '[:space:]' ' ' | cut -c1-72)
 
