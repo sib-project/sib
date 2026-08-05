@@ -5,7 +5,7 @@ itself instead of SQLite. Your store is a plain Git repository, and
 each user and assistant turn is a commit.
 
 This gives you:
-  - **No session ID, no turn ID.** A commit hash is both.
+  - **Full control of the context.** Just like git does.
   - **Backup and sharing for free.** The store is a normal Git
     repository, so any Git host works as a remote.
 
