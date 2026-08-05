@@ -298,3 +298,7 @@ time.
 The project is in its early stages. The codebase is not yet stable
 enough for large feature work, but you can get involved in shaping
 the core API.
+
+---
+Sib is free software, distributed under the Apache License 2.0. See
+[NOTICE](NOTICE) for copyright information.
