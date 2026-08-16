@@ -1,6 +1,6 @@
 이 프로그램을 구상한 지는 꽤 됐습니다.
 
-gpt-3이 출시되었을 초기에 chatgpt 웹 서비스는 기존 대화를 폴더로 묶는
+ChatGPT가 출시되었을 초기에 그 웹 서비스는 기존 대화를 폴더로 묶는
 기능을 지원하지 않았고 저는 그것을 만들려 했습니다. 대화 목록이 계속
 길어지고 이전에 한 대화를 찾기가 어려웠기 때문입니다.
 
@@ -39,10 +39,10 @@ plumbing 커맨드를 다뤄보신 분들이라면 쉽게 해킹 가능할거고
 
 I've had this program in mind for quite a while.
 
-Back when GPT-3 first came out, the ChatGPT web app had no way to
-group existing conversations into folders, and I set out to build
-one. My conversation list kept getting longer and finding old chats
-was getting hard.
+Back when ChatGPT first came out, it had no way to group existing
+conversations into folders, and I set out to build one. My
+conversation list kept getting longer and finding old chats was
+getting hard.
 
 Not long after - before I built it - a browser extension came out that
 did exactly that. I never used it. At the time I'd assumed I would
