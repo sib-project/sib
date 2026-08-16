@@ -300,5 +300,9 @@ enough for large feature work, but you can get involved in shaping
 the core API.
 
 ---
-Sib is free software, distributed under the Apache License 2.0. See
-[NOTICE](NOTICE) for copyright information.
+
+Copyright 2026 Hee-Suk Kim.
+
+This program is free software, released under the GNU General Public
+License, version 3 only. See [COPYING](COPYING) or
+<https://www.gnu.org/licenses/>.
