@@ -1,0 +1,85 @@
+이 프로그램을 구상한 지는 꽤 됐습니다.
+
+gpt-3이 출시되었을 초기에 chatgpt 웹 서비스는 기존 대화를 폴더로 묶는
+기능을 지원하지 않았고 저는 그것을 만들려 했습니다. 대화 목록이 계속
+길어지고 이전에 한 대화를 찾기가 어려웠기 때문입니다.
+
+잠시 뒤 제가 그것을 만들기 전에 그것을 지원하는 웹 익스텐션이
+나왔지만, 저는 그것을 사용하지 않았습니다. 왜냐하면, 당시에는 기존
+대화를 다시 보고싶어 할거라고 생각했지만 막상 찾아서 다시 처음부터
+읽으려고 하면 어마어마한 양의 slop에 머리가 아팠거든요.
+
+이후에 유닉스 파이프라인에 빠져있던 시기에, 셸 스크립트를 연습할 겸
+jq/curl 만으로 작동하는 LLM api 클라이언트를 만들었는데, 컨텍스트를
+단일 jsonl에 넣다 보니 날짜 기반 파일명 규칙 같은 걸 제가 고안하거나
+유저에게 떠넘겨야 했습니다. 둘 다 웹 UI보다 귀찮아서 안 썼습니다.
+
+이후에 git의 작동원리를 설명하는 포스트를 읽고, 그걸 그대로 사용하는
+게 LLM 대화에 꽤 좋을거라는 생각을 했습니다. 커밋 DAG가 이미 포크가
+빈번하게 일어나는 LLM 대화에 적합한 자료구조라는 생각은 한번 씩 해보지
+않았나요?
+
+제가 git을 좋아하는 이유는 소스트리 스냅샷이랑 커밋 자료구조 자체는
+언제나 immutable이고, 파괴적인 switch/restore/reset와 같은 작업들은
+그냥 커밋 객체 id를 담고 있는 ref 파일의 이름을 변경하는 작업일
+뿐이라는 점입니다. 그것을 이해한다면 아무리 cli가 이해하기 힘들어도
+명령어를 실행하는 것이 망설여지지 않죠. 어차피 복구 할 수 있으니깐요.
+
+LLM 대화는 소스트리 만큼이나 변경에 취약하지는 않지만, 저한테는 자동
+생성된 세션 제목보다는 자동 생성되는 sha-1 해시가 좀 더 편안하더
+라구요 ^~^
+
+sib는 그런 느낌으로 만들었습니다. 리드미에 느낌 이상의 설명이 있어요.
+
+이 프로젝트는 early stage 이고 여러분들의 도움을 필요로 합니다. git
+plumbing 커맨드를 다뤄보신 분들이라면 쉽게 해킹 가능할거고, 그게 꽤
+재미있을 꺼에요.
+
+------
+
+I've had this program in mind for quite a while.
+
+Back when GPT-3 first came out, the ChatGPT web app had no way to
+group existing conversations into folders, and I set out to build
+one. My conversation list kept getting longer and finding old chats
+was getting hard.
+
+Not long after - before I built it - a browser extension came out that
+did exactly that. I never used it. At the time I'd assumed I would
+want to revisit old conversations, but whenever I actually found one
+and tried to read it from the top, the sheer volume of slop gave me a
+headache.
+
+Later, during a phase where I was deep into Unix pipelines, I wrote an
+LLM API client only depending on jq and curl, partly as shell
+scripting practice. But since the context went into a single jsonl
+file, I had to either invent something like a date-based filename
+convention myself or push that job onto the user. Both were more
+annoying than the web UI, so I didn't use it.
+
+After that I read a post explaining how git works, and it struck me
+that git fits LLM conversations pretty well. Isn't "the commit DAG is
+already the right data structure for LLM conversations, where forking
+happens constantly" something everyone has thought at least once?
+
+The reason I like git is that the source tree snapshot and the commit
+structure itself are always immutable, and destructive operations like
+switch/restore/reset are really just renaming a ref file that holds a
+commit object id. Once you understand that, no matter how hard the CLI
+is to make sense of, you never hesitate to run a command. You can
+always get it back.
+
+LLM conversations aren't as fragile to change as a source tree, but
+for me an auto-generated SHA-1 hash is more comforting than an
+auto-generated session title ^~^
+
+That's the feeling sib was built on. The README has actual
+explanations though.
+
+The project is in its early stages and contributions are welcome. If
+you've worked with git plumbing commands, it'll be easy to hack on -
+and I think it'll be pretty fun.
+
+------
+
+First written 2026-08-16
