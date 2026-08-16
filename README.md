@@ -169,11 +169,11 @@ Now, enjoy!
 We previously fetched the conversation in the tutorial:
 
     sib git fetch https://github.com/sib-project/hub \
-        dilluti0n/about-blackhole:refs/conv/about-blackhole
+        dilluti0n/nvim-sib-log-res:refs/conv/nvim-sib-log-res
 
 The above command copies the conversation directly to your repository.
-You can read it with `sib log about-blackhole` or continue it wherever
-you want with `sib ask -p about-blackhole`.
+You can read it with `sib log nvim-sib-log-res` or continue it wherever
+you want with `sib ask -p nvim-sib-log-res`.
 
 The reverse works too:
 
@@ -260,8 +260,8 @@ So is yours. The hub URL above is too long to type twice:
 
 And run with
 
-    sib hub dilluti0n/about-blackhole
-    sib show about-blackhole
+    sib hub dilluti0n/nvim-sib-log-res
+    sib show nvim-sib-log-res
 
 What makes this cheap is the plumbing underneath. A conversation is a
 *chain* of commits. Each commit's tree is a *trace*, a flat key-value
