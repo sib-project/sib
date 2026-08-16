@@ -1,0 +1,35 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          echo "version=${tag#v}" >>"$GITHUB_OUTPUT"
+
+      - name: Build tarball
+        run: make tarball
+
+      - name: Check release notes exist
+        run: test -f "Documentation/RelNotes/${{ steps.version.outputs.version }}.md"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Sib version ${{ steps.version.outputs.version }}
+          body_path: Documentation/RelNotes/${{ steps.version.outputs.version }}.md
+          files: sib-${{ steps.version.outputs.version }}.tar.gz
+          fail_on_unmatched_files: true
