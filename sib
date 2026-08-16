@@ -311,6 +311,7 @@ usage() {
 usage: sib <ask|log|show|switch|save> [-h ...]
        sib edit <chain-ish>
        sib status
+       sib init
 EOF
 }
 
