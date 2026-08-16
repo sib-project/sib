@@ -185,7 +185,7 @@ any public git repo as above and [open a share
 issue](https://github.com/sib-project/hub/issues/new?template=share.yml). It
 will be automatically published.
 
----
+### Usage of sib ask
 
 `sib ask` has a lot of flags. That is because it does a lot of things
 in the first place. Each flag changes one part of what it does, and
@@ -204,7 +204,7 @@ querying the model.
 So when a conversation gets too long, this starts a fresh one while
 carrying the context over.
 
----
+### Markdown rendering and emacs/neovim extension
 
 If you need Markdown rendering:
 
