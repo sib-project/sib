@@ -306,11 +306,19 @@ cmd_symbolic_ref() {
 # dispatcher
 #
 
+usage() {
+    cat <<EOF >&2
+usage: sib <ask|log|show|switch|save> [-h ...]
+       sib edit <chain-ish>
+       sib status
+EOF
+}
+
 cmd_config() {
     lgit config "$@"
 }
 
-[[ $# -lt 1 ]] && { echo "usage: sib <command> [args]" >&2; exit 1; }
+[[ $# -lt 1 ]] && { usage; die; }
 
 cmd="$1"; shift
 
@@ -345,5 +353,8 @@ if declare -F "$fn" > /dev/null; then
 elif command -v "sib-$cmd" >/dev/null; then
     exec "sib-$cmd" "$@"
 else
-    die sib: unknown command $cmd
+    echo sib: unknown command $cmd >&2
+    echo >&2
+    usage
+    die
 fi
