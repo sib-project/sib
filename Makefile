@@ -6,7 +6,7 @@ VERSION = $(shell cat VERSION)
 PN = sib-${VERSION}
 
 tarball:
-	tar --transform "s,^,${PN}/," -czvf ${PN}.tar.gz ${SIB} ${PLM} VERSION Makefile README.md NOTICE LICENSE
+	tar --transform "s,^,${PN}/," -czvf ${PN}.tar.gz ${SIB} ${PLM} VERSION Makefile README.md COPYING
 
 clean:
 	rm *.tar.gz
